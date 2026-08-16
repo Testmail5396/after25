@@ -12,8 +12,9 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
+  const url = path.startsWith("/.netlify/") ? path : `/api${path}`;
   try {
-    response = await fetch(`/api${path}`, {
+    response = await fetch(url, {
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       ...init,
@@ -68,8 +69,15 @@ export async function createOrder(input: OrderInput): Promise<OrderRecord> {
   return data.order;
 }
 
+// Item-level order routes call the function directly (bypassing the
+// /api/orders/* redirect) because Netlify's splat-to-query rewrite for this
+// route does not reliably populate the id query parameter in production.
+function orderItemUrl(id: string): string {
+  return `/.netlify/functions/orders-item?id=${encodeURIComponent(id)}`;
+}
+
 export async function updateOrder(id: string, input: OrderInput): Promise<OrderRecord> {
-  const data = await request<{ order: OrderRecord }>(`/orders/${id}`, {
+  const data = await request<{ order: OrderRecord }>(orderItemUrl(id), {
     method: "PUT",
     body: JSON.stringify(input),
   });
@@ -77,7 +85,7 @@ export async function updateOrder(id: string, input: OrderInput): Promise<OrderR
 }
 
 export async function dismissOrderReminder(id: string, forYear: number): Promise<OrderRecord> {
-  const data = await request<{ order: OrderRecord }>(`/orders/${id}`, {
+  const data = await request<{ order: OrderRecord }>(orderItemUrl(id), {
     method: "PATCH",
     body: JSON.stringify({ reminderDismissedForYear: forYear }),
   });
@@ -85,7 +93,7 @@ export async function dismissOrderReminder(id: string, forYear: number): Promise
 }
 
 export function deleteOrder(id: string): Promise<{ success: boolean }> {
-  return request(`/orders/${id}`, { method: "DELETE" });
+  return request(orderItemUrl(id), { method: "DELETE" });
 }
 
 // ---- Purchases ----
@@ -103,8 +111,12 @@ export async function createPurchase(input: PurchaseInput): Promise<PurchaseReco
   return data.purchase;
 }
 
+function purchaseItemUrl(id: string): string {
+  return `/.netlify/functions/purchases-item?id=${encodeURIComponent(id)}`;
+}
+
 export async function updatePurchase(id: string, input: PurchaseInput): Promise<PurchaseRecord> {
-  const data = await request<{ purchase: PurchaseRecord }>(`/purchases/${id}`, {
+  const data = await request<{ purchase: PurchaseRecord }>(purchaseItemUrl(id), {
     method: "PUT",
     body: JSON.stringify(input),
   });
@@ -112,7 +124,7 @@ export async function updatePurchase(id: string, input: PurchaseInput): Promise<
 }
 
 export function deletePurchase(id: string): Promise<{ success: boolean }> {
-  return request(`/purchases/${id}`, { method: "DELETE" });
+  return request(purchaseItemUrl(id), { method: "DELETE" });
 }
 
 // ---- Backup ----
