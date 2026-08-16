@@ -229,8 +229,8 @@ export function SalesPage() {
         <div className="flex flex-col gap-4">
           <div>
             <p className="mb-1.5 text-sm font-medium text-cocoa-600">Category</p>
-            <div className="grid grid-cols-3 gap-2">
-              {(["All", "Cake", "Brownie"] as CategoryFilter[]).map((c) => (
+            <div className="grid grid-cols-2 gap-2">
+              {(["All", "Cake", "Brownie", "Cupcake", "Biscuits", "Bento Cake"] as CategoryFilter[]).map((c) => (
                 <button
                   key={c}
                   type="button"

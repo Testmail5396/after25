@@ -1,10 +1,13 @@
-import { useState, type FormEvent } from "react";
-import { ChevronDown, Gift } from "lucide-react";
+import { useMemo, useState, type FormEvent } from "react";
+import { ChevronDown, Gift, Contact } from "lucide-react";
 import { orderInputSchema } from "@shared/schemas";
-import type { Occasion, OrderInput, OrderRecord, ProductCategory, QuantityUnit } from "@shared/types";
+import type { CustomerSummary, Occasion, OrderInput, OrderRecord, ProductCategory, QuantityUnit } from "@shared/types";
 import { Button } from "../ui/Button";
 import { Field, inputClassName } from "../ui/Field";
 import { todayDateOnly } from "../../lib/dateRange";
+import { useData } from "../../context/DataContext";
+import { aggregateCustomers } from "../../lib/customers";
+import { CustomerPickerSheet } from "./CustomerPickerSheet";
 
 interface OrderFormProps {
   initial?: OrderRecord;
@@ -24,7 +27,14 @@ interface FormState {
   pickupOrDeliveryTime: string;
   occasion: Occasion;
   occasionDate: string;
+  occasionNote: string;
   reminderEnabled: boolean;
+}
+
+const PRODUCT_CATEGORIES: ProductCategory[] = ["Cake", "Brownie", "Cupcake", "Biscuits", "Bento Cake"];
+
+function defaultUnitForCategory(category: ProductCategory): QuantityUnit {
+  return category === "Cake" || category === "Bento Cake" ? "kg" : "g";
 }
 
 function toFormState(order?: OrderRecord): FormState {
@@ -40,21 +50,46 @@ function toFormState(order?: OrderRecord): FormState {
     pickupOrDeliveryTime: order?.pickupOrDeliveryTime ?? "",
     occasion: order?.occasion ?? "None",
     occasionDate: order?.occasionDate ?? "",
+    occasionNote: order?.occasionNote ?? "",
     reminderEnabled: order?.reminderEnabled ?? false,
   };
 }
 
 export function OrderForm({ initial, onSubmit, onCancel }: OrderFormProps) {
+  const { orders } = useData();
+  const customers = useMemo(() => aggregateCustomers(orders), [orders]);
+
   const [form, setForm] = useState<FormState>(() => toFormState(initial));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [showOccasion, setShowOccasion] = useState(() => (initial?.occasion ?? "None") !== "None");
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const needsOccasionDate = form.occasion === "Birthday" || form.occasion === "Anniversary";
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function handleCategoryChange(category: ProductCategory) {
+    setForm((prev) => ({ ...prev, productCategory: category, quantityUnit: defaultUnitForCategory(category) }));
+  }
+
+  function handleOccasionChange(occasion: Occasion) {
+    setForm((prev) => ({
+      ...prev,
+      occasion,
+      occasionDate:
+        (occasion === "Birthday" || occasion === "Anniversary") && !prev.occasionDate
+          ? todayDateOnly()
+          : prev.occasionDate,
+    }));
+  }
+
+  function handlePickCustomer(customer: CustomerSummary) {
+    setForm((prev) => ({ ...prev, customerName: customer.name, phoneNumber: customer.phoneNumber }));
+    setPickerOpen(false);
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -73,6 +108,7 @@ export function OrderForm({ initial, onSubmit, onCancel }: OrderFormProps) {
       pickupOrDeliveryTime: form.pickupOrDeliveryTime,
       occasion: form.occasion,
       occasionDate: needsOccasionDate ? form.occasionDate || null : null,
+      occasionNote: form.occasion !== "None" ? form.occasionNote : "",
       reminderEnabled: needsOccasionDate ? form.reminderEnabled : false,
     };
 
@@ -103,13 +139,24 @@ export function OrderForm({ initial, onSubmit, onCancel }: OrderFormProps) {
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4 pb-2">
       <Field label="Customer name" htmlFor="customerName" required error={errors.customerName}>
-        <input
-          id="customerName"
-          className={inputClassName(!!errors.customerName)}
-          value={form.customerName}
-          onChange={(e) => update("customerName", e.target.value)}
-          placeholder="e.g. Priya Kumar"
-        />
+        <div className="flex gap-2">
+          <input
+            id="customerName"
+            className={inputClassName(!!errors.customerName)}
+            value={form.customerName}
+            onChange={(e) => update("customerName", e.target.value)}
+            placeholder="e.g. Priya Kumar"
+          />
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            aria-label="Choose an existing customer"
+            title="Choose an existing customer"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-cream-300 bg-white text-cocoa-500"
+          >
+            <Contact className="h-5 w-5" aria-hidden />
+          </button>
+        </div>
       </Field>
 
       <Field label="Phone number" htmlFor="phoneNumber" required error={errors.phoneNumber}>
@@ -125,23 +172,18 @@ export function OrderForm({ initial, onSubmit, onCancel }: OrderFormProps) {
       </Field>
 
       <Field label="Category" htmlFor="productCategory" required>
-        <div className="grid grid-cols-2 gap-2">
-          {(["Cake", "Brownie"] as ProductCategory[]).map((option) => (
-            <button
-              type="button"
-              key={option}
-              onClick={() => update("productCategory", option)}
-              className={`h-11 rounded-xl border text-sm font-semibold ${
-                form.productCategory === option
-                  ? "border-berry-400 bg-blush-100 text-berry-600"
-                  : "border-cream-300 bg-white text-cocoa-500"
-              }`}
-              aria-pressed={form.productCategory === option}
-            >
-              {option}
-            </button>
+        <select
+          id="productCategory"
+          className={inputClassName()}
+          value={form.productCategory}
+          onChange={(e) => handleCategoryChange(e.target.value as ProductCategory)}
+        >
+          {PRODUCT_CATEGORIES.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
           ))}
-        </div>
+        </select>
       </Field>
 
       <Field label="Product / description" htmlFor="productName" required error={errors.productName}>
@@ -175,8 +217,7 @@ export function OrderForm({ initial, onSubmit, onCancel }: OrderFormProps) {
             onChange={(e) => update("quantityUnit", e.target.value as QuantityUnit)}
           >
             <option value="kg">kg</option>
-            <option value="box">box</option>
-            <option value="piece">piece</option>
+            <option value="g">g</option>
           </select>
         </Field>
       </div>
@@ -241,7 +282,7 @@ export function OrderForm({ initial, onSubmit, onCancel }: OrderFormProps) {
                 id="occasion"
                 className={inputClassName()}
                 value={form.occasion}
-                onChange={(e) => update("occasion", e.target.value as Occasion)}
+                onChange={(e) => handleOccasionChange(e.target.value as Occasion)}
               >
                 <option value="None">None</option>
                 <option value="Birthday">Birthday</option>
@@ -272,6 +313,20 @@ export function OrderForm({ initial, onSubmit, onCancel }: OrderFormProps) {
                 </label>
               </>
             )}
+
+            {form.occasion !== "None" && (
+              <Field label="Note" htmlFor="occasionNote" hint="Anything you want to remember about this occasion">
+                <textarea
+                  id="occasionNote"
+                  rows={2}
+                  maxLength={300}
+                  className={`${inputClassName()} h-auto py-2`}
+                  value={form.occasionNote}
+                  onChange={(e) => update("occasionNote", e.target.value)}
+                  placeholder="e.g. Likes eggless cakes"
+                />
+              </Field>
+            )}
           </div>
         )}
       </div>
@@ -290,6 +345,13 @@ export function OrderForm({ initial, onSubmit, onCancel }: OrderFormProps) {
           Save sale
         </Button>
       </div>
+
+      <CustomerPickerSheet
+        open={pickerOpen}
+        customers={customers}
+        onSelect={handlePickCustomer}
+        onClose={() => setPickerOpen(false)}
+      />
     </form>
   );
 }

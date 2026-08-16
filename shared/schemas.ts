@@ -8,8 +8,8 @@ const dateOnly = z
 
 const isoDateTime = z.string().datetime({ offset: true }).or(z.string().min(1));
 
-export const productCategorySchema = z.enum(["Cake", "Brownie"]);
-export const quantityUnitSchema = z.enum(["kg", "box", "piece"]);
+export const productCategorySchema = z.enum(["Cake", "Brownie", "Cupcake", "Biscuits", "Bento Cake"]);
+export const quantityUnitSchema = z.enum(["kg", "g"]);
 export const occasionSchema = z.enum(["Birthday", "Anniversary", "Other", "None"]);
 
 // ---- Purchases ----
@@ -42,6 +42,7 @@ export const orderInputSchema = z
     pickupOrDeliveryTime: z.string().trim().max(60).optional().default(""),
     occasion: occasionSchema.default("None"),
     occasionDate: dateOnly.optional().nullable(),
+    occasionNote: z.string().trim().max(300).optional().default(""),
     reminderEnabled: z.boolean().default(false),
   })
   .superRefine((val, ctx) => {

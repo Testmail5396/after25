@@ -7,8 +7,8 @@ export type {
   LoginInput,
 } from "./schemas";
 
-export type ProductCategory = "Cake" | "Brownie";
-export type QuantityUnit = "kg" | "box" | "piece";
+export type ProductCategory = "Cake" | "Brownie" | "Cupcake" | "Biscuits" | "Bento Cake";
+export type QuantityUnit = "kg" | "g";
 export type Occasion = "Birthday" | "Anniversary" | "Other" | "None";
 
 export type DateRangePreset =

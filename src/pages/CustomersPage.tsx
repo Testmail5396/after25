@@ -9,6 +9,8 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { ListItemSkeleton } from "../components/ui/Skeleton";
 import { MobilePageHeader } from "../components/layout/MobilePageHeader";
 import { CompactMetricCard } from "../components/dashboard/CompactMetricCard";
+import { BottomActionDock } from "../components/ui/BottomActionDock";
+import { PAGE_BOTTOM_PADDING_DOCK } from "../components/layout/layoutTokens";
 
 export function CustomersPage() {
   const { orders, loading } = useData();
@@ -31,10 +33,10 @@ export function CustomersPage() {
   }, [customers, search]);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className={`flex flex-col gap-3 ${PAGE_BOTTOM_PADDING_DOCK}`}>
       <MobilePageHeader title="Customers" meta={`${customers.length} customer${customers.length === 1 ? "" : "s"}`} />
 
-      <div className="relative">
+      <div className="relative hidden sm:block">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cocoa-400" aria-hidden />
         <input
           type="search"
@@ -101,6 +103,20 @@ export function CustomersPage() {
           )}
         </>
       )}
+
+      <BottomActionDock>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cocoa-400" aria-hidden />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search customers by name or phone"
+            aria-label="Search customers"
+            className="h-11 w-full rounded-full border border-cream-300 bg-white pl-9 pr-3 text-sm outline-none focus:border-berry-400"
+          />
+        </div>
+      </BottomActionDock>
     </div>
   );
 }

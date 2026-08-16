@@ -1,5 +1,17 @@
 import { useState } from "react";
-import { Phone, MessageCircle, Pencil, Trash2, Cake, Cookie, Gift, MoreVertical } from "lucide-react";
+import {
+  Phone,
+  MessageCircle,
+  Pencil,
+  Trash2,
+  Cake,
+  Cookie,
+  CakeSlice,
+  Croissant,
+  Package,
+  Gift,
+  MoreVertical,
+} from "lucide-react";
 import type { OrderRecord } from "@shared/types";
 import { formatCurrency, formatDateDisplayShort } from "../../lib/format";
 import { telHref, whatsappHref } from "../../lib/phone";
@@ -11,7 +23,13 @@ interface OrderCardProps {
   onDelete: () => void;
 }
 
-const categoryIcon = { Cake, Brownie: Cookie };
+const categoryIcon = {
+  Cake,
+  Brownie: Cookie,
+  Cupcake: CakeSlice,
+  Biscuits: Croissant,
+  "Bento Cake": Package,
+};
 
 export function OrderCard({ order, onEdit, onDelete }: OrderCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -57,6 +75,7 @@ export function OrderCard({ order, onEdit, onDelete }: OrderCardProps) {
               {order.occasionDate ? ` · ${formatDateDisplayShort(order.occasionDate)}` : ""}
             </p>
           )}
+          {order.occasionNote && <p className="mt-0.5 truncate text-[11px] italic text-cocoa-400">{order.occasionNote}</p>}
         </div>
         <button
           type="button"

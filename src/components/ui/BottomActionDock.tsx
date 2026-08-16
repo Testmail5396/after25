@@ -4,16 +4,17 @@ import { BOTTOM_NAV_HEIGHT } from "../layout/layoutTokens";
 
 interface BottomActionDockProps {
   children: ReactNode;
-  actionIcon: ComponentType<{ className?: string }>;
-  actionLabel: string;
-  onAction: () => void;
+  actionIcon?: ComponentType<{ className?: string }>;
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
 /**
  * Sticky bar just above the bottom nav holding the search field (or other
- * primary control) and a circular add action, reachable with one hand.
- * Lifts above the on-screen keyboard using the visual viewport, since a
- * plain `fixed` bar would otherwise sit underneath it on mobile Safari.
+ * primary control) and, optionally, a circular add action — reachable with
+ * one hand. Lifts above the on-screen keyboard using the visual viewport,
+ * since a plain `fixed` bar would otherwise sit underneath it on mobile
+ * Safari. Omit actionIcon/actionLabel/onAction for a search-only dock.
  */
 export function BottomActionDock({ children, actionIcon: Icon, actionLabel, onAction }: BottomActionDockProps) {
   const keyboardInset = useKeyboardInset();
@@ -25,15 +26,17 @@ export function BottomActionDock({ children, actionIcon: Icon, actionLabel, onAc
       style={{ bottom, paddingBottom: keyboardInset > 0 ? 8 : "calc(env(safe-area-inset-bottom) + 8px)" }}
     >
       <div className="min-w-0 flex-1">{children}</div>
-      <button
-        type="button"
-        onClick={onAction}
-        aria-label={actionLabel}
-        title={actionLabel}
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-berry-500 text-white active:scale-95"
-      >
-        <Icon className="h-5 w-5" aria-hidden />
-      </button>
+      {Icon && onAction && (
+        <button
+          type="button"
+          onClick={onAction}
+          aria-label={actionLabel}
+          title={actionLabel}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-berry-500 text-white active:scale-95"
+        >
+          <Icon className="h-5 w-5" aria-hidden />
+        </button>
+      )}
     </div>
   );
 }

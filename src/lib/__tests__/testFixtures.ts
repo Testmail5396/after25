@@ -14,6 +14,7 @@ export function makeOrder(overrides: Partial<OrderRecord> = {}): OrderRecord {
     pickupOrDeliveryTime: "5:00 PM",
     occasion: "None",
     occasionDate: null,
+    occasionNote: "",
     reminderEnabled: false,
     reminderDismissedForYear: null,
     createdAt: "2026-08-01T10:00:00.000Z",
