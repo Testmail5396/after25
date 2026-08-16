@@ -10,22 +10,23 @@ export function TrendChart({ data }: TrendChartProps) {
   const tickInterval = data.length > 8 ? Math.ceil(data.length / 6) : 0;
 
   return (
-    <div className="h-56 w-full">
+    <div className="h-40 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+        <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid stroke="#F0E0CE" vertical={false} />
           <XAxis
             dataKey="label"
             interval={tickInterval}
-            tick={{ fontSize: 11, fill: "#7A5240" }}
+            tick={{ fontSize: 10, fill: "#7A5240" }}
             axisLine={{ stroke: "#F0E0CE" }}
             tickLine={false}
+            minTickGap={16}
           />
           <YAxis
-            tick={{ fontSize: 11, fill: "#7A5240" }}
+            tick={{ fontSize: 10, fill: "#7A5240" }}
             axisLine={false}
             tickLine={false}
-            width={44}
+            width={40}
             tickFormatter={(value: number) => (value >= 1000 ? `${Math.round(value / 1000)}k` : String(value))}
           />
           <Tooltip

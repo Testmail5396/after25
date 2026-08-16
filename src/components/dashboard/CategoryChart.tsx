@@ -13,23 +13,23 @@ export function CategoryChart({ cakeRevenue, brownieRevenue }: CategoryChartProp
   ];
 
   return (
-    <div className="h-40 w-full">
+    <div className="h-28 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} layout="vertical" margin={{ top: 0, right: 24, left: 0, bottom: 0 }}>
+        <BarChart data={data} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid stroke="#F0E0CE" horizontal={false} />
           <XAxis
             type="number"
-            tick={{ fontSize: 11, fill: "#7A5240" }}
+            tick={{ fontSize: 10, fill: "#7A5240" }}
             axisLine={false}
             tickLine={false}
             tickFormatter={(value: number) => (value >= 1000 ? `${Math.round(value / 1000)}k` : String(value))}
           />
-          <YAxis type="category" dataKey="name" width={64} tick={{ fontSize: 13, fill: "#4A2E23" }} axisLine={false} tickLine={false} />
+          <YAxis type="category" dataKey="name" width={56} tick={{ fontSize: 12, fill: "#4A2E23" }} axisLine={false} tickLine={false} />
           <Tooltip
             formatter={(value: number) => formatCurrency(value)}
             contentStyle={{ borderRadius: 12, border: "1px solid #F0E0CE", fontSize: 12 }}
           />
-          <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={28}>
+          <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={20}>
             {data.map((entry) => (
               <Cell key={entry.name} fill={entry.color} />
             ))}

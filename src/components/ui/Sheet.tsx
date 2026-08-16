@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import { X } from "lucide-react";
+import { useCloseOnBack } from "../../lib/useCloseOnBack";
 
 interface SheetProps {
   open: boolean;
@@ -10,6 +11,8 @@ interface SheetProps {
 }
 
 export function Sheet({ open, title, onClose, children, footer }: SheetProps) {
+  useCloseOnBack(open, onClose);
+
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (e: KeyboardEvent) => {

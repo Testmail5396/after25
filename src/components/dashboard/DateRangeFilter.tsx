@@ -27,14 +27,14 @@ export function DateRangeFilter({
 }: DateRangeFilterProps) {
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex gap-2 overflow-x-auto no-scrollbar" role="group" aria-label="Select date range">
+      <div className="grid grid-cols-2 gap-2" role="group" aria-label="Select date range">
         {presets.map((p) => (
           <button
             key={p.value}
             type="button"
             onClick={() => onPresetChange(p.value)}
             aria-pressed={preset === p.value}
-            className={`h-9 shrink-0 rounded-full px-4 text-sm font-medium ${
+            className={`h-11 rounded-xl text-sm font-medium ${
               preset === p.value ? "bg-berry-500 text-white" : "border border-cream-300 bg-white text-cocoa-500"
             }`}
           >
