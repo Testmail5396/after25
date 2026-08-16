@@ -2,7 +2,17 @@ import { getStore } from "@netlify/blobs";
 
 const STORE_NAME = "after25cakes-data";
 
+/**
+ * Some deploy environments don't auto-inject the Blobs context (siteID/token)
+ * into the function runtime. When BLOBS_SITE_ID and BLOBS_TOKEN are set, fall
+ * back to explicit "manual" configuration as documented by Netlify.
+ */
 export function dataStore() {
+  const siteID = process.env.BLOBS_SITE_ID;
+  const token = process.env.BLOBS_TOKEN;
+  if (siteID && token) {
+    return getStore({ name: STORE_NAME, siteID, token });
+  }
   return getStore(STORE_NAME);
 }
 
