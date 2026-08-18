@@ -36,8 +36,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["Poppins", "system-ui", "sans-serif"],
-        display: ["Playfair Display", "Georgia", "serif"],
+        sans: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+        display: ["Fraunces", "Georgia", "serif"],
       },
       borderRadius: {
         xl2: "1.25rem",

@@ -1,4 +1,5 @@
 import { getStore } from "@netlify/blobs";
+import { localDelete, localGet, localList, localPut, shouldUseLocalStore } from "./localBlobsStore";
 
 const STORE_NAME = "after25cakes-data";
 
@@ -17,6 +18,7 @@ export function dataStore() {
 }
 
 export async function listRecords<T>(prefix: string): Promise<T[]> {
+  if (shouldUseLocalStore()) return localList<T>(prefix);
   const store = dataStore();
   const { blobs } = await store.list({ prefix });
   const records: (T | null)[] = await Promise.all(
@@ -29,17 +31,20 @@ export async function listRecords<T>(prefix: string): Promise<T[]> {
 }
 
 export async function getRecord<T>(key: string): Promise<T | null> {
+  if (shouldUseLocalStore()) return localGet<T>(key);
   const store = dataStore();
   const value = await store.get(key, { type: "json" });
   return (value as T | null) ?? null;
 }
 
 export async function putRecord(key: string, value: unknown): Promise<void> {
+  if (shouldUseLocalStore()) return localPut(key, value);
   const store = dataStore();
   await store.setJSON(key, value);
 }
 
 export async function deleteRecord(key: string): Promise<void> {
+  if (shouldUseLocalStore()) return localDelete(key);
   const store = dataStore();
   await store.delete(key);
 }

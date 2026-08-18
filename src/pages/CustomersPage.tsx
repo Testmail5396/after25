@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import { Search, Users, Trophy, Repeat, ChevronRight } from "lucide-react";
 import { useData } from "../context/DataContext";
 import { aggregateCustomers, getMostFrequentCustomer, getTopSpender } from "../lib/customers";
@@ -10,16 +9,19 @@ import { ListItemSkeleton } from "../components/ui/Skeleton";
 import { MobilePageHeader } from "../components/layout/MobilePageHeader";
 import { CompactMetricCard } from "../components/dashboard/CompactMetricCard";
 import { BottomActionDock } from "../components/ui/BottomActionDock";
+import { SidePanel } from "../components/ui/SidePanel";
+import { CustomerDetailContent } from "../components/customers/CustomerDetailContent";
 import { PAGE_BOTTOM_PADDING_DOCK } from "../components/layout/layoutTokens";
 
 export function CustomersPage() {
   const { orders, loading } = useData();
-  const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
   const customers = useMemo(() => aggregateCustomers(orders), [orders]);
   const topSpender = useMemo(() => getTopSpender(customers), [customers]);
   const mostFrequent = useMemo(() => getMostFrequentCustomer(customers), [customers]);
+  const selectedCustomer = useMemo(() => customers.find((c) => c.key === selectedKey), [customers, selectedKey]);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -68,13 +70,13 @@ export function CustomersPage() {
               label={topSpender ? formatCurrency(topSpender.totalSpent) : "—"}
               value={topSpender?.name ?? "—"}
               icon={Trophy}
-              onClick={topSpender ? () => navigate(`/customers/${topSpender.key}`) : undefined}
+              onClick={topSpender ? () => setSelectedKey(topSpender.key) : undefined}
             />
             <CompactMetricCard
               label={mostFrequent ? `${mostFrequent.orderCount} order${mostFrequent.orderCount === 1 ? "" : "s"}` : "—"}
               value={mostFrequent?.name ?? "—"}
               icon={Repeat}
-              onClick={mostFrequent ? () => navigate(`/customers/${mostFrequent.key}`) : undefined}
+              onClick={mostFrequent ? () => setSelectedKey(mostFrequent.key) : undefined}
             />
           </div>
 
@@ -83,10 +85,11 @@ export function CustomersPage() {
           ) : (
             <div className="flex flex-col gap-2">
               {filtered.map((customer) => (
-                <Link
+                <button
                   key={customer.key}
-                  to={`/customers/${customer.key}`}
-                  className="flex items-center gap-2 rounded-xl2 bg-white p-3 shadow-card"
+                  type="button"
+                  onClick={() => setSelectedKey(customer.key)}
+                  className="flex items-center gap-2 rounded-xl2 bg-white p-3 text-left shadow-card"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-cocoa-700">{customer.name}</p>
@@ -97,7 +100,7 @@ export function CustomersPage() {
                   </div>
                   <p className="shrink-0 text-sm font-semibold text-cocoa-700">{formatCurrency(customer.totalSpent)}</p>
                   <ChevronRight className="h-4 w-4 shrink-0 text-cocoa-300" aria-hidden />
-                </Link>
+                </button>
               ))}
             </div>
           )}
@@ -117,6 +120,10 @@ export function CustomersPage() {
           />
         </div>
       </BottomActionDock>
+
+      <SidePanel open={!!selectedKey} title={selectedCustomer?.name ?? "Customer"} onClose={() => setSelectedKey(null)}>
+        {selectedKey && <CustomerDetailContent phoneKey={selectedKey} />}
+      </SidePanel>
     </div>
   );
 }

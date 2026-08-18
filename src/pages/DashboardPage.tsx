@@ -22,7 +22,8 @@ import { FilterBottomSheet } from "../components/ui/FilterBottomSheet";
 import { DateRangeFilter } from "../components/dashboard/DateRangeFilter";
 import { CompactMetricCard } from "../components/dashboard/CompactMetricCard";
 import { TrendChart } from "../components/dashboard/TrendChart";
-import { CategoryChart } from "../components/dashboard/CategoryChart";
+import { CategoryBreakdownChart } from "../components/insights/CategoryBreakdownChart";
+import { buildCategoryBreakdown } from "../lib/insights";
 import { ReminderCard } from "../components/reminders/ReminderCard";
 import { CardSkeleton } from "../components/ui/Skeleton";
 import { Card } from "../components/ui/Card";
@@ -89,8 +90,7 @@ export function DashboardPage() {
   const visibleReminders = reminders.slice(0, 3);
 
   const netPositive = metrics.netCashBalance >= 0;
-  const cakePct = metrics.totalSales > 0 ? Math.round((metrics.cakeSales / metrics.totalSales) * 100) : 0;
-  const browniePct = metrics.totalSales > 0 ? Math.round((metrics.brownieSales / metrics.totalSales) * 100) : 0;
+  const categoryBreakdown = useMemo(() => buildCategoryBreakdown(filteredOrders), [filteredOrders]);
 
   return (
     <div className="flex flex-col gap-3.5">
@@ -151,18 +151,14 @@ export function DashboardPage() {
           </div>
 
           <Card>
-            <p className="mb-2 text-sm font-semibold text-cocoa-600">Cake vs Brownie Revenue</p>
-            <div className="mb-2 flex items-center gap-4 text-xs">
-              <span className="flex items-center gap-1.5 text-cocoa-600">
-                <span className="h-2 w-2 rounded-full bg-berry-500" />
-                Cake {formatCurrency(metrics.cakeSales)} · {cakePct}%
-              </span>
-              <span className="flex items-center gap-1.5 text-cocoa-600">
-                <span className="h-2 w-2 rounded-full bg-cocoa-500" />
-                Brownie {formatCurrency(metrics.brownieSales)} · {browniePct}%
-              </span>
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-sm font-semibold text-cocoa-600">Category vs Amount</p>
+              <Link to="/more/insights" className="flex items-center text-xs font-medium text-berry-500">
+                Details
+                <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
             </div>
-            <CategoryChart cakeRevenue={metrics.cakeSales} brownieRevenue={metrics.brownieSales} />
+            <CategoryBreakdownChart items={categoryBreakdown} />
           </Card>
 
           <Card>

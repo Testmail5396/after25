@@ -9,14 +9,16 @@
 
   body {
     @apply bg-cream-100 text-cocoa-700 antialiased;
-    font-family: "Poppins", system-ui, sans-serif;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+    font-feature-settings: "cv05", "cv11";
   }
 
   h1,
   h2,
   h3,
   .font-display {
-    font-family: "Playfair Display", Georgia, serif;
+    font-family: "Fraunces", Georgia, serif;
+    font-optical-sizing: auto;
   }
 
   :focus-visible {
