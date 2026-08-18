@@ -1,21 +1,44 @@
 import { useEffect, useRef } from "react";
 
-let sheetIdCounter = 0;
-
 /**
- * While `open`, pushes a throwaway history entry so the device/browser back
- * action closes this sheet/menu instead of navigating away from the page.
- * If the sheet is closed via its own UI (not the back button), the
- * throwaway entry is silently consumed with history.back().
+ * All currently-open sheets/menus share ONE history entry and ONE stack,
+ * rather than each pushing its own. Two independent per-sheet entries proved
+ * unreliable: closing one sheet calls `history.back()` to consume its own
+ * entry, but a sibling opening in the very same click (e.g. an overflow
+ * menu's "Edit" action closes the menu and opens the edit sheet at once)
+ * pushes its own entry moments later — and the two calls could race, leaving
+ * the "just opened" sheet closed again.
  *
- * When one sheet opens another in the same tick (e.g. an overflow menu's
- * "Edit" action closes the menu and opens the edit sheet at once), both
- * instances' effects can commit in either order. Each pushed entry is
- * tagged with a unique id so cleanup only calls history.back() when its
- * own entry is still the current one — otherwise a later sheet's fresh
- * push would get popped by an earlier sheet's stale cleanup, closing the
- * sheet that was just opened.
+ * Instead: pushing only happens when the shared stack goes from empty to
+ * non-empty, and consuming that one entry only happens after a same-tick
+ * sibling has had a chance to add itself back. That check is deferred with
+ * `setTimeout`, not `queueMicrotask` — React flushes a newly-mounted
+ * sibling's passive effect on a later macrotask-ish tick, not a microtask,
+ * so checking too early would see an empty stack before that sibling joins.
+ * A real back-button press closes everything currently on the stack,
+ * deepest first — one "back" exits the whole modal chain, which is simpler
+ * and far more robust than trying to peel off exactly one layer at a time.
  */
+interface StackEntry {
+  id: number;
+  onClose: () => void;
+}
+
+const stack: StackEntry[] = [];
+let idCounter = 0;
+let listenerAttached = false;
+
+function ensureGlobalListener() {
+  if (listenerAttached) return;
+  listenerAttached = true;
+  window.addEventListener("popstate", () => {
+    while (stack.length > 0) {
+      const top = stack.pop();
+      top?.onClose();
+    }
+  });
+}
+
 export function useCloseOnBack(open: boolean, onClose: () => void): void {
   const idRef = useRef<number | null>(null);
   const onCloseRef = useRef(onClose);
@@ -24,23 +47,26 @@ export function useCloseOnBack(open: boolean, onClose: () => void): void {
   useEffect(() => {
     if (!open) return;
 
-    const id = ++sheetIdCounter;
+    ensureGlobalListener();
+    const id = ++idCounter;
     idRef.current = id;
-    window.history.pushState({ __sheetId: id }, "");
-
-    const handlePopState = () => {
-      idRef.current = null;
-      onCloseRef.current();
-    };
-    window.addEventListener("popstate", handlePopState);
+    const wasEmpty = stack.length === 0;
+    stack.push({ id, onClose: () => onCloseRef.current() });
+    if (wasEmpty) {
+      window.history.pushState({ __sheetSession: true }, "");
+    }
 
     return () => {
-      window.removeEventListener("popstate", handlePopState);
-      const stillCurrent = idRef.current !== null && (window.history.state as { __sheetId?: number } | null)?.__sheetId === id;
-      idRef.current = null;
-      if (stillCurrent) {
-        window.history.back();
+      const index = stack.findIndex((entry) => entry.id === id);
+      if (index !== -1) {
+        stack.splice(index, 1);
+        setTimeout(() => {
+          if (stack.length === 0) {
+            window.history.back();
+          }
+        }, 0);
       }
+      idRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);

@@ -11,6 +11,8 @@ import { CustomerPickerSheet } from "./CustomerPickerSheet";
 
 interface OrderFormProps {
   initial?: OrderRecord;
+  /** Pre-fills and locks the customer name/phone fields — used when adding a sale from a specific customer's detail view. */
+  lockedCustomer?: { name: string; phoneNumber: string };
   onSubmit: (input: OrderInput) => Promise<void>;
   onCancel: () => void;
 }
@@ -37,10 +39,10 @@ function defaultUnitForCategory(category: ProductCategory): QuantityUnit {
   return category === "Cake" || category === "Bento Cake" ? "kg" : "g";
 }
 
-function toFormState(order?: OrderRecord): FormState {
+function toFormState(order?: OrderRecord, lockedCustomer?: { name: string; phoneNumber: string }): FormState {
   return {
-    customerName: order?.customerName ?? "",
-    phoneNumber: order?.phoneNumber ?? "",
+    customerName: order?.customerName ?? lockedCustomer?.name ?? "",
+    phoneNumber: order?.phoneNumber ?? lockedCustomer?.phoneNumber ?? "",
     productCategory: order?.productCategory ?? "Cake",
     productName: order?.productName ?? "",
     quantity: order ? String(order.quantity) : "1",
@@ -55,11 +57,11 @@ function toFormState(order?: OrderRecord): FormState {
   };
 }
 
-export function OrderForm({ initial, onSubmit, onCancel }: OrderFormProps) {
+export function OrderForm({ initial, lockedCustomer, onSubmit, onCancel }: OrderFormProps) {
   const { orders } = useData();
   const customers = useMemo(() => aggregateCustomers(orders), [orders]);
 
-  const [form, setForm] = useState<FormState>(() => toFormState(initial));
+  const [form, setForm] = useState<FormState>(() => toFormState(initial, lockedCustomer));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -142,20 +144,23 @@ export function OrderForm({ initial, onSubmit, onCancel }: OrderFormProps) {
         <div className="flex gap-2">
           <input
             id="customerName"
-            className={inputClassName(!!errors.customerName)}
+            className={`${inputClassName(!!errors.customerName)} ${lockedCustomer ? "bg-cream-100 text-cocoa-500" : ""}`}
             value={form.customerName}
             onChange={(e) => update("customerName", e.target.value)}
             placeholder="e.g. Priya Kumar"
+            disabled={!!lockedCustomer}
           />
-          <button
-            type="button"
-            onClick={() => setPickerOpen(true)}
-            aria-label="Choose an existing customer"
-            title="Choose an existing customer"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-cream-300 bg-white text-cocoa-500"
-          >
-            <Contact className="h-5 w-5" aria-hidden />
-          </button>
+          {!lockedCustomer && (
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              aria-label="Choose an existing customer"
+              title="Choose an existing customer"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-cream-300 bg-white text-cocoa-500"
+            >
+              <Contact className="h-5 w-5" aria-hidden />
+            </button>
+          )}
         </div>
       </Field>
 
@@ -164,10 +169,11 @@ export function OrderForm({ initial, onSubmit, onCancel }: OrderFormProps) {
           id="phoneNumber"
           type="tel"
           inputMode="tel"
-          className={inputClassName(!!errors.phoneNumber)}
+          className={`${inputClassName(!!errors.phoneNumber)} ${lockedCustomer ? "bg-cream-100 text-cocoa-500" : ""}`}
           value={form.phoneNumber}
           onChange={(e) => update("phoneNumber", e.target.value)}
           placeholder="e.g. 98765 43210"
+          disabled={!!lockedCustomer}
         />
       </Field>
 

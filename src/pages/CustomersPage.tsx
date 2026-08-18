@@ -13,10 +13,13 @@ import { SidePanel } from "../components/ui/SidePanel";
 import { CustomerDetailContent } from "../components/customers/CustomerDetailContent";
 import { PAGE_BOTTOM_PADDING_DOCK } from "../components/layout/layoutTokens";
 
+type CustomerSort = "recent" | "alphabetical";
+
 export function CustomersPage() {
   const { orders, loading } = useData();
   const [search, setSearch] = useState("");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [sortMode, setSortMode] = useState<CustomerSort>("recent");
 
   const customers = useMemo(() => aggregateCustomers(orders), [orders]);
   const topSpender = useMemo(() => getTopSpender(customers), [customers]);
@@ -31,8 +34,10 @@ export function CustomersPage() {
         if (!query) return true;
         return c.name.toLowerCase().includes(query) || (phoneDigits.length >= 3 && c.key.includes(phoneDigits));
       })
-      .sort((a, b) => (a.lastOrderDate < b.lastOrderDate ? 1 : -1));
-  }, [customers, search]);
+      .sort((a, b) =>
+        sortMode === "alphabetical" ? a.name.localeCompare(b.name) : a.lastOrderDate < b.lastOrderDate ? 1 : -1,
+      );
+  }, [customers, search, sortMode]);
 
   return (
     <div className={`flex flex-col gap-3 ${PAGE_BOTTOM_PADDING_DOCK}`}>
@@ -78,6 +83,23 @@ export function CustomersPage() {
               icon={Repeat}
               onClick={mostFrequent ? () => setSelectedKey(mostFrequent.key) : undefined}
             />
+          </div>
+
+          <div className="flex items-center justify-end gap-2">
+            <span className="text-xs text-cocoa-400">Sort:</span>
+            {(["recent", "alphabetical"] as CustomerSort[]).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setSortMode(mode)}
+                aria-pressed={sortMode === mode}
+                className={`h-8 rounded-full px-3 text-xs font-semibold ${
+                  sortMode === mode ? "bg-berry-500 text-white" : "border border-cream-300 bg-white text-cocoa-500"
+                }`}
+              >
+                {mode === "recent" ? "Recent" : "A–Z"}
+              </button>
+            ))}
           </div>
 
           {filtered.length === 0 ? (

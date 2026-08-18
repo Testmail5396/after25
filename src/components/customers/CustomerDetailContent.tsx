@@ -1,18 +1,25 @@
-import { useMemo } from "react";
-import { Phone, MessageCircle } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Phone, MessageCircle, Plus } from "lucide-react";
+import type { OrderInput } from "@shared/types";
 import { useData } from "../../context/DataContext";
+import { useToast } from "../ui/Toast";
 import { aggregateCustomers } from "../../lib/customers";
 import { normalizePhoneNumber, telHref, whatsappHref } from "../../lib/phone";
 import { formatCurrency, formatDateDisplay } from "../../lib/format";
 import { Card } from "../ui/Card";
 import { EmptyState } from "../ui/EmptyState";
+import { Button } from "../ui/Button";
+import { Sheet } from "../ui/Sheet";
+import { OrderForm } from "../sales/OrderForm";
 
 interface CustomerDetailContentProps {
   phoneKey: string;
 }
 
 export function CustomerDetailContent({ phoneKey }: CustomerDetailContentProps) {
-  const { orders } = useData();
+  const { orders, addOrder } = useData();
+  const { showToast } = useToast();
+  const [addSaleOpen, setAddSaleOpen] = useState(false);
 
   const customer = useMemo(() => aggregateCustomers(orders).find((c) => c.key === phoneKey), [orders, phoneKey]);
 
@@ -32,12 +39,18 @@ export function CustomerDetailContent({ phoneKey }: CustomerDetailContentProps) 
 
   const message = `Hi ${customer.name.split(" ")[0]}, this is After25 Cakes. Thank you for being our customer!`;
 
+  async function handleAddSale(input: OrderInput) {
+    await addOrder(input);
+    showToast("success", "Sale added");
+    setAddSaleOpen(false);
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="font-display text-2xl font-bold text-cocoa-700">{customer.name}</h1>
         <p className="text-sm text-cocoa-500">{customer.phoneNumber}</p>
-        <div className="mt-2 flex gap-2">
+        <div className="mt-2 flex flex-wrap gap-2">
           <a href={telHref(customer.phoneNumber)} className="flex items-center gap-1.5 rounded-full bg-cream-200 px-3.5 h-10 text-sm font-medium text-cocoa-600">
             <Phone className="h-4 w-4" aria-hidden /> Call
           </a>
@@ -49,6 +62,10 @@ export function CustomerDetailContent({ phoneKey }: CustomerDetailContentProps) 
           >
             <MessageCircle className="h-4 w-4" aria-hidden /> WhatsApp
           </a>
+          <Button size="md" className="gap-1.5" onClick={() => setAddSaleOpen(true)}>
+            <Plus className="h-4 w-4" aria-hidden />
+            Add Sale
+          </Button>
         </div>
       </div>
 
@@ -102,6 +119,14 @@ export function CustomerDetailContent({ phoneKey }: CustomerDetailContentProps) 
           ))}
         </div>
       </div>
+
+      <Sheet open={addSaleOpen} title={`Add sale for ${customer.name}`} onClose={() => setAddSaleOpen(false)}>
+        <OrderForm
+          lockedCustomer={{ name: customer.name, phoneNumber: customer.phoneNumber }}
+          onSubmit={handleAddSale}
+          onCancel={() => setAddSaleOpen(false)}
+        />
+      </Sheet>
     </div>
   );
 }

@@ -17,6 +17,7 @@ import { PurchaseCard } from "../components/purchases/PurchaseCard";
 import { sumPurchases } from "../lib/calculations";
 import { formatCurrency } from "../lib/format";
 import { PAGE_BOTTOM_PADDING_FAB } from "../components/layout/layoutTokens";
+import { dateGroupHeaderLabel, groupConsecutiveByDate } from "../lib/groupByDate";
 
 export function PurchasesPage() {
   const { purchases, loading, addPurchase, editPurchase, removePurchase } = useData();
@@ -43,6 +44,7 @@ export function PurchasesPage() {
   }, [purchases, dateFrom, dateTo]);
 
   const periodTotal = useMemo(() => sumPurchases(filtered), [filtered]);
+  const groupedPurchases = useMemo(() => groupConsecutiveByDate(filtered, (p) => p.purchaseDate), [filtered]);
 
   function openAdd() {
     setEditingPurchase(undefined);
@@ -154,13 +156,20 @@ export function PurchasesPage() {
             }
           />
         ) : (
-          filtered.map((purchase) => (
-            <PurchaseCard
-              key={purchase.id}
-              purchase={purchase}
-              onEdit={() => openEdit(purchase)}
-              onDelete={() => setPendingDelete(purchase)}
-            />
+          groupedPurchases.map((group) => (
+            <div key={group.dateKey} className="flex flex-col gap-2">
+              <p className="px-1 text-xs font-semibold text-cocoa-400">{dateGroupHeaderLabel(group.dateKey)}</p>
+              <div className="flex flex-col gap-3">
+                {group.items.map((purchase) => (
+                  <PurchaseCard
+                    key={purchase.id}
+                    purchase={purchase}
+                    onEdit={() => openEdit(purchase)}
+                    onDelete={() => setPendingDelete(purchase)}
+                  />
+                ))}
+              </div>
+            </div>
           ))
         )}
       </div>

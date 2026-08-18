@@ -9,11 +9,15 @@ import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { EmptyState } from "../components/ui/EmptyState";
 import { ListItemSkeleton } from "../components/ui/Skeleton";
 import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
 import { BottomActionDock } from "../components/ui/BottomActionDock";
 import { MobilePageHeader } from "../components/layout/MobilePageHeader";
 import { OrderForm } from "../components/sales/OrderForm";
 import { OrderCard } from "../components/sales/OrderCard";
 import { PAGE_BOTTOM_PADDING_DOCK } from "../components/layout/layoutTokens";
+import { dateGroupHeaderLabel, groupConsecutiveByDate } from "../lib/groupByDate";
+import { sumSales } from "../lib/calculations";
+import { formatCurrency } from "../lib/format";
 
 type CategoryFilter = "All" | ProductCategory;
 type SortOrder = "newest" | "oldest";
@@ -65,6 +69,9 @@ export function SalesPage() {
     });
     return result;
   }, [orders, search, category, dateFrom, dateTo, sort]);
+
+  const groupedOrders = useMemo(() => groupConsecutiveByDate(filtered, (o) => o.saleDate), [filtered]);
+  const periodTotal = useMemo(() => sumSales(filtered), [filtered]);
 
   function openAdd() {
     setEditingOrder(undefined);
@@ -167,6 +174,13 @@ export function SalesPage() {
         />
       </div>
 
+      {!loading && (
+        <Card className="flex items-center justify-between py-3">
+          <span className="text-sm text-cocoa-500">Total for selected period</span>
+          <span className="text-lg font-bold text-cocoa-700">{formatCurrency(periodTotal)}</span>
+        </Card>
+      )}
+
       <div className="flex flex-col gap-3">
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => <ListItemSkeleton key={i} />)
@@ -189,13 +203,20 @@ export function SalesPage() {
             }
           />
         ) : (
-          filtered.map((order) => (
-            <OrderCard
-              key={order.id}
-              order={order}
-              onEdit={() => openEdit(order)}
-              onDelete={() => setPendingDelete(order)}
-            />
+          groupedOrders.map((group) => (
+            <div key={group.dateKey} className="flex flex-col gap-2">
+              <p className="px-1 text-xs font-semibold text-cocoa-400">{dateGroupHeaderLabel(group.dateKey)}</p>
+              <div className="flex flex-col gap-3">
+                {group.items.map((order) => (
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    onEdit={() => openEdit(order)}
+                    onDelete={() => setPendingDelete(order)}
+                  />
+                ))}
+              </div>
+            </div>
           ))
         )}
       </div>
