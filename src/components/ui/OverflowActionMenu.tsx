@@ -76,7 +76,16 @@ export function OverflowActionMenu({ open, title, actions, onClose }: OverflowAc
                 className={className}
                 onClick={() => {
                   onClose();
-                  action.onClick?.();
+                  // Defer to the next tick: this menu's own close pushes/pops a
+                  // history entry (see useCloseOnBack). Opening another sheet in
+                  // the very same tick can push its entry before that history
+                  // operation settles, so the async popstate ends up closing
+                  // the sheet that just opened instead of this menu. Waiting a
+                  // beat lets the menu's history cleanup finish first.
+                  if (action.onClick) {
+                    const callback = action.onClick;
+                    setTimeout(callback, 50);
+                  }
                 }}
               >
                 <Icon className="h-5 w-5" aria-hidden />
