@@ -1,7 +1,15 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { ChevronDown, Gift, Contact } from "lucide-react";
 import { orderInputSchema } from "@shared/schemas";
-import type { CustomerSummary, Occasion, OrderInput, OrderRecord, ProductCategory, QuantityUnit } from "@shared/types";
+import type {
+  CustomerSummary,
+  Occasion,
+  OrderInput,
+  OrderRecord,
+  PaymentStatus,
+  ProductCategory,
+  QuantityUnit,
+} from "@shared/types";
 import { Button } from "../ui/Button";
 import { Field, inputClassName } from "../ui/Field";
 import { todayDateOnly } from "../../lib/dateRange";
@@ -31,9 +39,11 @@ interface FormState {
   occasionDate: string;
   occasionNote: string;
   reminderEnabled: boolean;
+  paymentStatus: PaymentStatus;
 }
 
 const PRODUCT_CATEGORIES: ProductCategory[] = ["Cake", "Brownie", "Cupcake", "Biscuits", "Bento Cake"];
+const PAYMENT_STATUSES: PaymentStatus[] = ["Paid", "Partial", "Pending"];
 
 function defaultUnitForCategory(category: ProductCategory): QuantityUnit {
   return category === "Cake" || category === "Bento Cake" ? "kg" : "g";
@@ -54,6 +64,7 @@ function toFormState(order?: OrderRecord, lockedCustomer?: { name: string; phone
     occasionDate: order?.occasionDate ?? "",
     occasionNote: order?.occasionNote ?? "",
     reminderEnabled: order?.reminderEnabled ?? false,
+    paymentStatus: order?.paymentStatus ?? "Paid",
   };
 }
 
@@ -112,6 +123,7 @@ export function OrderForm({ initial, lockedCustomer, onSubmit, onCancel }: Order
       occasionDate: needsOccasionDate ? form.occasionDate || null : null,
       occasionNote: form.occasion !== "None" ? form.occasionNote : "",
       reminderEnabled: needsOccasionDate ? form.reminderEnabled : false,
+      paymentStatus: form.paymentStatus,
     };
 
     const parsed = orderInputSchema.safeParse(candidate);
@@ -240,6 +252,26 @@ export function OrderForm({ initial, lockedCustomer, onSubmit, onCancel }: Order
           onChange={(e) => update("totalAmount", e.target.value)}
           placeholder="0"
         />
+      </Field>
+
+      <Field label="Payment status" htmlFor="paymentStatus" required>
+        <div className="grid grid-cols-3 gap-2">
+          {PAYMENT_STATUSES.map((status) => (
+            <button
+              key={status}
+              type="button"
+              onClick={() => update("paymentStatus", status)}
+              className={`h-11 rounded-xl border text-sm font-semibold ${
+                form.paymentStatus === status
+                  ? "border-berry-400 bg-blush-100 text-berry-600"
+                  : "border-cream-300 bg-white text-cocoa-500"
+              }`}
+              aria-pressed={form.paymentStatus === status}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
       </Field>
 
       <div className="grid grid-cols-2 gap-3">

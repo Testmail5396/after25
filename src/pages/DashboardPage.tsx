@@ -23,7 +23,9 @@ import { DateRangeFilter } from "../components/dashboard/DateRangeFilter";
 import { CompactMetricCard } from "../components/dashboard/CompactMetricCard";
 import { TrendChart } from "../components/dashboard/TrendChart";
 import { CategoryBreakdownChart } from "../components/insights/CategoryBreakdownChart";
-import { buildCategoryBreakdown } from "../lib/insights";
+import { WeekdayPatternChart } from "../components/insights/WeekdayPatternChart";
+import { BestSellersList } from "../components/insights/BestSellersList";
+import { buildCategoryBreakdown, buildProductBreakdown, buildWeekdayPattern } from "../lib/insights";
 import { ReminderCard } from "../components/reminders/ReminderCard";
 import { CardSkeleton } from "../components/ui/Skeleton";
 import { Card } from "../components/ui/Card";
@@ -91,6 +93,8 @@ export function DashboardPage() {
 
   const netPositive = metrics.netCashBalance >= 0;
   const categoryBreakdown = useMemo(() => buildCategoryBreakdown(filteredOrders), [filteredOrders]);
+  const weekdayPattern = useMemo(() => buildWeekdayPattern(filteredOrders), [filteredOrders]);
+  const productBreakdown = useMemo(() => buildProductBreakdown(filteredOrders), [filteredOrders]);
 
   return (
     <div className="flex flex-col gap-3.5">
@@ -151,13 +155,7 @@ export function DashboardPage() {
           </div>
 
           <Card>
-            <div className="mb-2 flex items-center justify-between">
-              <p className="text-sm font-semibold text-cocoa-600">Category vs Amount</p>
-              <Link to="/more/insights" className="flex items-center text-xs font-medium text-berry-500">
-                Details
-                <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-              </Link>
-            </div>
+            <p className="mb-2 text-sm font-semibold text-cocoa-600">Category vs Amount</p>
             <CategoryBreakdownChart items={categoryBreakdown} />
           </Card>
 
@@ -168,6 +166,16 @@ export function DashboardPage() {
             ) : (
               <TrendChart data={trendData} />
             )}
+          </Card>
+
+          <Card>
+            <p className="mb-2 text-sm font-semibold text-cocoa-600">Orders by day of week</p>
+            <WeekdayPatternChart pattern={weekdayPattern} />
+          </Card>
+
+          <Card>
+            <p className="mb-3 text-sm font-semibold text-cocoa-600">Best sellers</p>
+            <BestSellersList items={productBreakdown} />
           </Card>
 
           {visibleReminders.length > 0 && (

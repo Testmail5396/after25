@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { BarChart3, BellRing, DatabaseBackup, LogOut, ChevronRight, FlaskConical } from "lucide-react";
+import { BellRing, DatabaseBackup, LogOut, ChevronRight, FlaskConical } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useData } from "../context/DataContext";
 import { useToast } from "../components/ui/Toast";
@@ -39,11 +39,6 @@ export function MorePage() {
       </div>
 
       <nav className="flex flex-col divide-y divide-cream-200 overflow-hidden rounded-xl2 bg-white shadow-card">
-        <Link to="/more/insights" className="flex items-center gap-3 px-4 py-4">
-          <BarChart3 className="h-5 w-5 text-berry-500" aria-hidden />
-          <span className="flex-1 text-cocoa-700">Insights</span>
-          <ChevronRight className="h-5 w-5 text-cocoa-300" aria-hidden />
-        </Link>
         <Link to="/more/reminders" className="flex items-center gap-3 px-4 py-4">
           <BellRing className="h-5 w-5 text-berry-500" aria-hidden />
           <span className="flex-1 text-cocoa-700">Reminders</span>

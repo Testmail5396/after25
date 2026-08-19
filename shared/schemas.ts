@@ -11,6 +11,7 @@ const isoDateTime = z.string().datetime({ offset: true }).or(z.string().min(1));
 export const productCategorySchema = z.enum(["Cake", "Brownie", "Cupcake", "Biscuits", "Bento Cake"]);
 export const quantityUnitSchema = z.enum(["kg", "g"]);
 export const occasionSchema = z.enum(["Birthday", "Anniversary", "Other", "None"]);
+export const paymentStatusSchema = z.enum(["Paid", "Partial", "Pending"]);
 
 // ---- Purchases ----
 
@@ -44,6 +45,7 @@ export const orderInputSchema = z
     occasionDate: dateOnly.optional().nullable(),
     occasionNote: z.string().trim().max(300).optional().default(""),
     reminderEnabled: z.boolean().default(false),
+    paymentStatus: paymentStatusSchema.default("Paid"),
   })
   .superRefine((val, ctx) => {
     if ((val.occasion === "Birthday" || val.occasion === "Anniversary") && !val.occasionDate) {

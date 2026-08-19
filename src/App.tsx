@@ -12,7 +12,6 @@ import { CustomerDetailPage } from "./pages/CustomerDetailPage";
 import { MorePage } from "./pages/MorePage";
 import { RemindersPage } from "./pages/RemindersPage";
 import { BackupPage } from "./pages/BackupPage";
-import { InsightsPage } from "./pages/InsightsPage";
 
 function FullScreenLoader() {
   return (
@@ -47,7 +46,6 @@ export default function App() {
             <Route path="customers" element={<CustomersPage />} />
             <Route path="customers/:phoneKey" element={<CustomerDetailPage />} />
             <Route path="more" element={<MorePage />} />
-            <Route path="more/insights" element={<InsightsPage />} />
             <Route path="more/reminders" element={<RemindersPage />} />
             <Route path="more/backup" element={<BackupPage />} />
             <Route path="login" element={<Navigate to="/dashboard" replace />} />

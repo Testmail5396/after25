@@ -34,6 +34,7 @@ const categoryIcon = {
 export function OrderCard({ order, onEdit, onDelete }: OrderCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const Icon = categoryIcon[order.productCategory];
+  const paymentStatus = order.paymentStatus ?? "Paid";
   const whatsappMessage = `Hi ${order.customerName.split(" ")[0]}, this is After25 Cakes following up on your order.`;
 
   const actions: OverflowAction[] = [
@@ -59,7 +60,18 @@ export function OrderCard({ order, onEdit, onDelete }: OrderCardProps) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <p className="truncate text-sm font-semibold text-cocoa-700">{order.customerName}</p>
-            <p className="shrink-0 text-sm font-semibold text-cocoa-700">{formatCurrency(order.totalAmount)}</p>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {paymentStatus !== "Paid" && (
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                    paymentStatus === "Partial" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-600"
+                  }`}
+                >
+                  {paymentStatus}
+                </span>
+              )}
+              <p className="text-sm font-semibold text-cocoa-700">{formatCurrency(order.totalAmount)}</p>
+            </div>
           </div>
           <p className="truncate text-xs text-cocoa-500">
             {order.productName} · {order.quantity} {order.quantityUnit}

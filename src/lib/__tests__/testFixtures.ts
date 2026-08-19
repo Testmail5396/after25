@@ -17,6 +17,7 @@ export function makeOrder(overrides: Partial<OrderRecord> = {}): OrderRecord {
     occasionNote: "",
     reminderEnabled: false,
     reminderDismissedForYear: null,
+    paymentStatus: "Paid",
     createdAt: "2026-08-01T10:00:00.000Z",
     updatedAt: "2026-08-01T10:00:00.000Z",
     ...overrides,

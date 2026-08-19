@@ -22,6 +22,7 @@ export function buildSeedOrders(): OrderInput[] {
       occasionDate: upcomingBirthday,
       occasionNote: "",
       reminderEnabled: true,
+      paymentStatus: "Paid",
     },
     {
       customerName: "Priya Kumar",
@@ -37,6 +38,7 @@ export function buildSeedOrders(): OrderInput[] {
       occasionDate: null,
       occasionNote: "",
       reminderEnabled: false,
+      paymentStatus: "Paid",
     },
     {
       customerName: "Arjun Menon",
@@ -52,6 +54,7 @@ export function buildSeedOrders(): OrderInput[] {
       occasionDate: formatDateOnly(subDays(today, 200)),
       occasionNote: "",
       reminderEnabled: true,
+      paymentStatus: "Pending",
     },
     {
       customerName: "Divya Rao",
@@ -67,6 +70,7 @@ export function buildSeedOrders(): OrderInput[] {
       occasionDate: null,
       occasionNote: "",
       reminderEnabled: false,
+      paymentStatus: "Partial",
     },
     {
       customerName: "Divya Rao",
@@ -82,6 +86,7 @@ export function buildSeedOrders(): OrderInput[] {
       occasionDate: null,
       occasionNote: "",
       reminderEnabled: false,
+      paymentStatus: "Paid",
     },
   ];
 }

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { Search, Users, Trophy, Repeat, ChevronRight } from "lucide-react";
+import { Search, Users, Trophy, Repeat, ChevronRight, Heart } from "lucide-react";
 import { useData } from "../context/DataContext";
-import { aggregateCustomers, getMostFrequentCustomer, getTopSpender } from "../lib/customers";
+import { aggregateCustomers, getMostFrequentCustomer, getReturningCustomers, getTopSpender } from "../lib/customers";
 import { normalizePhoneNumber } from "../lib/phone";
 import { formatCurrency, formatDateDisplay } from "../lib/format";
 import { EmptyState } from "../components/ui/EmptyState";
@@ -24,6 +24,7 @@ export function CustomersPage() {
   const customers = useMemo(() => aggregateCustomers(orders), [orders]);
   const topSpender = useMemo(() => getTopSpender(customers), [customers]);
   const mostFrequent = useMemo(() => getMostFrequentCustomer(customers), [customers]);
+  const returningCustomers = useMemo(() => getReturningCustomers(customers), [customers]);
   const selectedCustomer = useMemo(() => customers.find((c) => c.key === selectedKey), [customers, selectedKey]);
 
   const filtered = useMemo(() => {
@@ -84,6 +85,30 @@ export function CustomersPage() {
               onClick={mostFrequent ? () => setSelectedKey(mostFrequent.key) : undefined}
             />
           </div>
+
+          {returningCustomers.length > 0 && (
+            <div>
+              <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-cocoa-600">
+                <Heart className="h-4 w-4 text-berry-500" aria-hidden />
+                Loyal customers ({returningCustomers.length})
+              </p>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {returningCustomers.map((customer) => (
+                  <button
+                    key={customer.key}
+                    type="button"
+                    onClick={() => setSelectedKey(customer.key)}
+                    className="flex shrink-0 flex-col items-start gap-0.5 rounded-xl2 bg-white px-3.5 py-2.5 text-left shadow-card"
+                  >
+                    <span className="max-w-[10rem] truncate text-sm font-semibold text-cocoa-700">{customer.name}</span>
+                    <span className="text-xs text-cocoa-500">
+                      {customer.orderCount} orders · {formatCurrency(customer.totalSpent)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center justify-end gap-2">
             <span className="text-xs text-cocoa-400">Sort:</span>

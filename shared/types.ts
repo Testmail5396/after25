@@ -10,6 +10,7 @@ export type {
 export type ProductCategory = "Cake" | "Brownie" | "Cupcake" | "Biscuits" | "Bento Cake";
 export type QuantityUnit = "kg" | "g";
 export type Occasion = "Birthday" | "Anniversary" | "Other" | "None";
+export type PaymentStatus = "Paid" | "Partial" | "Pending";
 
 export type DateRangePreset =
   | "last7days"
