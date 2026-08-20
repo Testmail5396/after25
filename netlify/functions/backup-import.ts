@@ -26,17 +26,19 @@ const rawHandler: Handler = async (event) => {
     return errorResponse(400, "Backup file is not in the expected format", parsed.error.flatten());
   }
 
-  const { orders, purchases } = parsed.data;
+  const { orders, purchases, products } = parsed.data;
 
   await Promise.all([
     ...orders.map((order) => putRecord(`orders/${order.id}`, order)),
     ...purchases.map((purchase) => putRecord(`purchases/${purchase.id}`, purchase)),
+    ...products.map((product) => putRecord(`products/${product.id}`, product)),
   ]);
 
   return json(200, {
     success: true,
     importedOrders: orders.length,
     importedPurchases: purchases.length,
+    importedProducts: products.length,
   });
 };
 

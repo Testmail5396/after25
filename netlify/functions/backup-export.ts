@@ -1,6 +1,6 @@
 import type { Handler } from "@netlify/functions";
 import { withErrorHandling } from "./_shared/withErrorHandling";
-import type { Backup, OrderRecord, PurchaseRecord } from "@shared/types";
+import type { Backup, OrderRecord, ProductRateRecord, PurchaseRecord } from "@shared/types";
 import { getSessionUser } from "./_shared/auth";
 import { listRecords } from "./_shared/blobs";
 import { errorResponse, json } from "./_shared/response";
@@ -14,9 +14,10 @@ const rawHandler: Handler = async (event) => {
     return errorResponse(405, "Method not allowed");
   }
 
-  const [orders, purchases] = await Promise.all([
+  const [orders, purchases, products] = await Promise.all([
     listRecords<OrderRecord>("orders/"),
     listRecords<PurchaseRecord>("purchases/"),
+    listRecords<ProductRateRecord>("products/"),
   ]);
 
   const backup: Backup = {
@@ -24,6 +25,7 @@ const rawHandler: Handler = async (event) => {
     exportedAt: new Date().toISOString(),
     orders,
     purchases,
+    products,
   };
 
   return json(200, backup);

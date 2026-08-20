@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { addMonths, format } from "date-fns";
 import {
   Wallet,
   ShoppingBag,
@@ -7,12 +8,14 @@ import {
   ChevronRight,
   BellRing,
   Calendar,
+  CalendarClock,
   TrendingUp,
   TrendingDown,
+  AlertCircle,
 } from "lucide-react";
 import type { DateRangePreset } from "@shared/types";
 import { useData } from "../context/DataContext";
-import { buildDashboardMetrics } from "../lib/calculations";
+import { buildDashboardMetrics, sumSales } from "../lib/calculations";
 import { buildTrendData } from "../lib/trend";
 import { buildReminders } from "../lib/occasion";
 import { filterByDateRange, getPresetRange, todayDateOnly } from "../lib/dateRange";
@@ -22,6 +25,9 @@ import { FilterBottomSheet } from "../components/ui/FilterBottomSheet";
 import { DateRangeFilter } from "../components/dashboard/DateRangeFilter";
 import { CompactMetricCard } from "../components/dashboard/CompactMetricCard";
 import { TrendChart } from "../components/dashboard/TrendChart";
+import { ProfitChart } from "../components/dashboard/ProfitChart";
+import { MonthlyEventsCard } from "../components/dashboard/MonthlyEventsCard";
+import { buildMonthlyEvents } from "../lib/monthlyEvents";
 import { CategoryBreakdownChart } from "../components/insights/CategoryBreakdownChart";
 import { WeekdayPatternChart } from "../components/insights/WeekdayPatternChart";
 import { BestSellersList } from "../components/insights/BestSellersList";
@@ -44,6 +50,8 @@ export function DashboardPage() {
   const [preset, setPreset] = useState<DateRangePreset>("last1year");
   const [customStart, setCustomStart] = useState(todayDateOnly());
   const [customEnd, setCustomEnd] = useState(todayDateOnly());
+
+  const [trendView, setTrendView] = useState<"trend" | "profit">("trend");
 
   const [filterOpen, setFilterOpen] = useState(false);
   const [draftPreset, setDraftPreset] = useState<DateRangePreset>(preset);
@@ -95,6 +103,13 @@ export function DashboardPage() {
   const categoryBreakdown = useMemo(() => buildCategoryBreakdown(filteredOrders), [filteredOrders]);
   const weekdayPattern = useMemo(() => buildWeekdayPattern(filteredOrders), [filteredOrders]);
   const productBreakdown = useMemo(() => buildProductBreakdown(filteredOrders), [filteredOrders]);
+  const monthlyEvents = useMemo(() => buildMonthlyEvents(orders), [orders]);
+  const monthRangeLabel = useMemo(() => {
+    const today = new Date();
+    return `${format(today, "MMMM")} & ${format(addMonths(today, 1), "MMMM")}`;
+  }, []);
+  const pendingOrders = useMemo(() => orders.filter((o) => (o.paymentStatus ?? "Paid") === "Pending"), [orders]);
+  const pendingTotal = useMemo(() => sumSales(pendingOrders), [pendingOrders]);
 
   return (
     <div className="flex flex-col gap-3.5">
@@ -123,8 +138,8 @@ export function DashboardPage() {
           <CardSkeleton />
         </div>
       ) : (
-        <>
-          <Card className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[1fr_320px] lg:items-start lg:gap-4">
+          <Card className="flex flex-col gap-3 lg:col-start-1">
             <div>
               <p className="text-xs font-medium text-cocoa-400">Total Sales</p>
               <p className="font-display text-3xl font-bold leading-tight text-cocoa-700">
@@ -148,38 +163,88 @@ export function DashboardPage() {
             </div>
           </Card>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2 lg:col-start-1">
             <CompactMetricCard label="Purchases" value={formatCurrency(metrics.totalPurchases)} icon={Wallet} />
             <CompactMetricCard label="Orders" value={String(metrics.totalOrders)} icon={ShoppingBag} />
             <CompactMetricCard label="Avg order" value={formatCurrency(metrics.averageOrderValue)} icon={Calculator} />
           </div>
 
-          <Card>
+          {pendingTotal > 0 && (
+            <Card className="lg:col-start-1">
+              <Link to="/sales?payment=Pending" className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
+                    <AlertCircle className="h-4 w-4" aria-hidden />
+                  </div>
+                  <div>
+                    <p className="text-xs text-cocoa-400">
+                      Pending payments · {pendingOrders.length} sale{pendingOrders.length === 1 ? "" : "s"}
+                    </p>
+                    <p className="font-display text-lg font-bold text-red-600">{formatCurrency(pendingTotal)}</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-cocoa-300" aria-hidden />
+              </Link>
+            </Card>
+          )}
+
+          {monthlyEvents.length > 0 && (
+            <Card className="lg:col-start-2 lg:row-start-1">
+              <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-cocoa-600">
+                <CalendarClock className="h-4 w-4 text-berry-500" aria-hidden />
+                Coming up in {monthRangeLabel}
+              </p>
+              <MonthlyEventsCard events={monthlyEvents} monthLabel={monthRangeLabel} />
+            </Card>
+          )}
+
+          <Card className="lg:col-start-1">
             <p className="mb-2 text-sm font-semibold text-cocoa-600">Category vs Amount</p>
             <CategoryBreakdownChart items={categoryBreakdown} />
           </Card>
 
-          <Card>
-            <p className="mb-1 text-sm font-semibold text-cocoa-600">Sales vs Purchases</p>
+          <Card className="lg:col-start-1">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-sm font-semibold text-cocoa-600">
+                {trendView === "trend" ? "Sales vs Purchases" : "Actual Profit"}
+              </p>
+              <div className="flex rounded-full border border-cream-300 bg-cream-100 p-0.5">
+                {(["trend", "profit"] as const).map((view) => (
+                  <button
+                    key={view}
+                    type="button"
+                    onClick={() => setTrendView(view)}
+                    aria-pressed={trendView === view}
+                    className={`h-7 rounded-full px-3 text-xs font-semibold ${
+                      trendView === view ? "bg-white text-berry-600 shadow-sm" : "text-cocoa-500"
+                    }`}
+                  >
+                    {view === "trend" ? "Trend" : "Profit"}
+                  </button>
+                ))}
+              </div>
+            </div>
             {trendData.length === 0 ? (
               <p className="py-6 text-center text-sm text-cocoa-400">No data for this period yet.</p>
-            ) : (
+            ) : trendView === "trend" ? (
               <TrendChart data={trendData} />
+            ) : (
+              <ProfitChart data={trendData} />
             )}
           </Card>
 
-          <Card>
+          <Card className="lg:col-start-1">
             <p className="mb-2 text-sm font-semibold text-cocoa-600">Orders by day of week</p>
             <WeekdayPatternChart pattern={weekdayPattern} />
           </Card>
 
-          <Card>
+          <Card className="lg:col-start-1">
             <p className="mb-3 text-sm font-semibold text-cocoa-600">Best sellers</p>
             <BestSellersList items={productBreakdown} />
           </Card>
 
           {visibleReminders.length > 0 && (
-            <div>
+            <div className="lg:col-start-1">
               <div className="mb-2 flex items-center justify-between">
                 <p className="flex items-center gap-1.5 text-sm font-semibold text-cocoa-600">
                   <BellRing className="h-4 w-4 text-berry-500" aria-hidden />
@@ -204,7 +269,7 @@ export function DashboardPage() {
               </div>
             </div>
           )}
-        </>
+        </div>
       )}
 
       <FilterBottomSheet

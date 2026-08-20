@@ -12,6 +12,7 @@ interface PurchaseCardProps {
 
 export function PurchaseCard({ purchase, onEdit, onDelete }: PurchaseCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const category = purchase.category ?? "General Groceries";
 
   const actions: OverflowAction[] = [
     { key: "edit", label: "Edit purchase", icon: Pencil, onClick: onEdit },
@@ -26,7 +27,9 @@ export function PurchaseCard({ purchase, onEdit, onDelete }: PurchaseCardProps) 
         </div>
         <div>
           <p className="text-sm font-semibold text-cocoa-700">{formatCurrency(purchase.totalAmount)}</p>
-          <p className="text-xs text-cocoa-400">{formatDateDisplay(purchase.purchaseDate)}</p>
+          <p className="text-xs text-cocoa-400">
+            {formatDateDisplay(purchase.purchaseDate)} · {category}
+          </p>
         </div>
       </div>
       <button

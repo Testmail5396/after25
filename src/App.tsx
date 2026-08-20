@@ -12,6 +12,7 @@ import { CustomerDetailPage } from "./pages/CustomerDetailPage";
 import { MorePage } from "./pages/MorePage";
 import { RemindersPage } from "./pages/RemindersPage";
 import { BackupPage } from "./pages/BackupPage";
+import { ProductRatesPage } from "./pages/ProductRatesPage";
 
 function FullScreenLoader() {
   return (
@@ -48,6 +49,7 @@ export default function App() {
             <Route path="more" element={<MorePage />} />
             <Route path="more/reminders" element={<RemindersPage />} />
             <Route path="more/backup" element={<BackupPage />} />
+            <Route path="more/products" element={<ProductRatesPage />} />
             <Route path="login" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>

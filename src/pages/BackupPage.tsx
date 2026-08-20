@@ -129,9 +129,11 @@ export function BackupPage() {
       <ConfirmDialog
         open={!!pendingImport}
         title="Import this backup?"
-        description={`This file contains ${pendingImport?.orders.length ?? 0} sale(s) and ${
+        description={`This file contains ${pendingImport?.orders.length ?? 0} sale(s), ${
           pendingImport?.purchases.length ?? 0
-        } purchase(s). Matching records will be updated and new ones added. Existing records not in the file will be kept.`}
+        } purchase(s) and ${
+          pendingImport?.products.length ?? 0
+        } product rate(s). Matching records will be updated and new ones added. Existing records not in the file will be kept.`}
         confirmLabel={importing ? "Importing..." : "Import"}
         danger={false}
         onConfirm={confirmImport}

@@ -1,5 +1,5 @@
 import Dexie, { type Table } from "dexie";
-import type { OrderRecord, PurchaseRecord } from "@shared/types";
+import type { OrderRecord, ProductRateRecord, PurchaseRecord } from "@shared/types";
 
 export interface MetaRecord {
   key: string;
@@ -9,6 +9,7 @@ export interface MetaRecord {
 class After25Database extends Dexie {
   orders!: Table<OrderRecord, string>;
   purchases!: Table<PurchaseRecord, string>;
+  products!: Table<ProductRateRecord, string>;
   meta!: Table<MetaRecord, string>;
 
   constructor() {
@@ -16,6 +17,12 @@ class After25Database extends Dexie {
     this.version(1).stores({
       orders: "id, saleDate, phoneNumber, productCategory",
       purchases: "id, purchaseDate",
+      meta: "key",
+    });
+    this.version(2).stores({
+      orders: "id, saleDate, phoneNumber, productCategory",
+      purchases: "id, purchaseDate",
+      products: "id, productName",
       meta: "key",
     });
   }
@@ -35,6 +42,11 @@ export async function cachePurchases(purchases: PurchaseRecord[]): Promise<void>
   await db.purchases.bulkPut(purchases);
 }
 
+export async function cacheProducts(products: ProductRateRecord[]): Promise<void> {
+  await db.products.clear();
+  await db.products.bulkPut(products);
+}
+
 export async function setLastSyncedAt(iso: string): Promise<void> {
   await db.meta.put({ key: LAST_SYNCED_KEY, value: iso });
 }
@@ -50,4 +62,8 @@ export async function getCachedOrders(): Promise<OrderRecord[]> {
 
 export async function getCachedPurchases(): Promise<PurchaseRecord[]> {
   return db.purchases.toArray();
+}
+
+export async function getCachedProducts(): Promise<ProductRateRecord[]> {
+  return db.products.toArray();
 }

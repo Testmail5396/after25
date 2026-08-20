@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Plus, SlidersHorizontal, Wallet } from "lucide-react";
-import type { PurchaseInput, PurchaseRecord } from "@shared/types";
+import type { PurchaseCategory, PurchaseInput, PurchaseRecord } from "@shared/types";
 import { useData } from "../context/DataContext";
 import { useToast } from "../components/ui/Toast";
 import { Sheet } from "../components/ui/Sheet";
@@ -19,29 +19,36 @@ import { formatCurrency } from "../lib/format";
 import { PAGE_BOTTOM_PADDING_FAB } from "../components/layout/layoutTokens";
 import { dateGroupHeaderLabel, groupConsecutiveByDate } from "../lib/groupByDate";
 
+type CategoryFilter = "All" | PurchaseCategory;
+
+const CATEGORY_FILTERS: CategoryFilter[] = ["All", "Baking Essentials", "General Groceries"];
+
 export function PurchasesPage() {
   const { purchases, loading, addPurchase, editPurchase, removePurchase } = useData();
   const { showToast } = useToast();
 
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [category, setCategory] = useState<CategoryFilter>("All");
 
   const [filterOpen, setFilterOpen] = useState(false);
   const [draftDateFrom, setDraftDateFrom] = useState(dateFrom);
   const [draftDateTo, setDraftDateTo] = useState(dateTo);
+  const [draftCategory, setDraftCategory] = useState<CategoryFilter>(category);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingPurchase, setEditingPurchase] = useState<PurchaseRecord | undefined>(undefined);
   const [pendingDelete, setPendingDelete] = useState<PurchaseRecord | null>(null);
 
-  const activeFilterCount = (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
+  const activeFilterCount = (dateFrom ? 1 : 0) + (dateTo ? 1 : 0) + (category !== "All" ? 1 : 0);
 
   const filtered = useMemo(() => {
     return purchases
       .filter((p) => (dateFrom ? p.purchaseDate >= dateFrom : true))
       .filter((p) => (dateTo ? p.purchaseDate <= dateTo : true))
+      .filter((p) => category === "All" || (p.category ?? "General Groceries") === category)
       .sort((a, b) => (a.purchaseDate < b.purchaseDate ? 1 : a.purchaseDate > b.purchaseDate ? -1 : (a.createdAt < b.createdAt ? 1 : -1)));
-  }, [purchases, dateFrom, dateTo]);
+  }, [purchases, dateFrom, dateTo, category]);
 
   const periodTotal = useMemo(() => sumPurchases(filtered), [filtered]);
   const groupedPurchases = useMemo(() => groupConsecutiveByDate(filtered, (p) => p.purchaseDate), [filtered]);
@@ -59,20 +66,24 @@ export function PurchasesPage() {
   function openFilter() {
     setDraftDateFrom(dateFrom);
     setDraftDateTo(dateTo);
+    setDraftCategory(category);
     setFilterOpen(true);
   }
 
   function applyFilter() {
     setDateFrom(draftDateFrom);
     setDateTo(draftDateTo);
+    setCategory(draftCategory);
     setFilterOpen(false);
   }
 
   function clearFilter() {
     setDraftDateFrom("");
     setDraftDateTo("");
+    setDraftCategory("All");
     setDateFrom("");
     setDateTo("");
+    setCategory("All");
     setFilterOpen(false);
   }
 
@@ -188,25 +199,48 @@ export function PurchasesPage() {
         onReset={clearFilter}
         resetLabel="Clear"
       >
-        <div className="grid grid-cols-2 gap-3">
-          <label className="flex flex-col gap-1 text-xs text-cocoa-500">
-            From
-            <input
-              type="date"
-              value={draftDateFrom}
-              onChange={(e) => setDraftDateFrom(e.target.value)}
-              className="h-11 rounded-lg border border-cream-300 bg-white px-2 text-sm"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-cocoa-500">
-            To
-            <input
-              type="date"
-              value={draftDateTo}
-              onChange={(e) => setDraftDateTo(e.target.value)}
-              className="h-11 rounded-lg border border-cream-300 bg-white px-2 text-sm"
-            />
-          </label>
+        <div className="flex flex-col gap-4">
+          <div>
+            <p className="mb-1.5 text-sm font-medium text-cocoa-600">Category</p>
+            <div className="grid grid-cols-1 gap-2">
+              {CATEGORY_FILTERS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setDraftCategory(c)}
+                  className={`h-11 rounded-xl border text-sm font-semibold ${
+                    draftCategory === c
+                      ? "border-berry-400 bg-blush-100 text-berry-600"
+                      : "border-cream-300 bg-white text-cocoa-500"
+                  }`}
+                  aria-pressed={draftCategory === c}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <label className="flex flex-col gap-1 text-xs text-cocoa-500">
+              From
+              <input
+                type="date"
+                value={draftDateFrom}
+                onChange={(e) => setDraftDateFrom(e.target.value)}
+                className="h-11 rounded-lg border border-cream-300 bg-white px-2 text-sm"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-cocoa-500">
+              To
+              <input
+                type="date"
+                value={draftDateTo}
+                onChange={(e) => setDraftDateTo(e.target.value)}
+                className="h-11 rounded-lg border border-cream-300 bg-white px-2 text-sm"
+              />
+            </label>
+          </div>
         </div>
       </FilterBottomSheet>
 

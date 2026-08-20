@@ -1,4 +1,13 @@
-import type { AuthUser, Backup, OrderInput, OrderRecord, PurchaseInput, PurchaseRecord } from "@shared/types";
+import type {
+  AuthUser,
+  Backup,
+  OrderInput,
+  OrderRecord,
+  ProductRateInput,
+  ProductRateRecord,
+  PurchaseInput,
+  PurchaseRecord,
+} from "@shared/types";
 
 export class ApiError extends Error {
   status: number;
@@ -125,6 +134,37 @@ export async function updatePurchase(id: string, input: PurchaseInput): Promise<
 
 export function deletePurchase(id: string): Promise<{ success: boolean }> {
   return request(purchaseItemUrl(id), { method: "DELETE" });
+}
+
+// ---- Product rates ----
+
+export async function fetchProductRates(): Promise<ProductRateRecord[]> {
+  const data = await request<{ products: ProductRateRecord[] }>("/products");
+  return data.products;
+}
+
+export async function createProductRate(input: ProductRateInput): Promise<ProductRateRecord> {
+  const data = await request<{ product: ProductRateRecord }>("/products", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return data.product;
+}
+
+function productItemUrl(id: string): string {
+  return `/.netlify/functions/products-item?id=${encodeURIComponent(id)}`;
+}
+
+export async function updateProductRate(id: string, input: ProductRateInput): Promise<ProductRateRecord> {
+  const data = await request<{ product: ProductRateRecord }>(productItemUrl(id), {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+  return data.product;
+}
+
+export function deleteProductRate(id: string): Promise<{ success: boolean }> {
+  return request(productItemUrl(id), { method: "DELETE" });
 }
 
 // ---- Backup ----

@@ -29,6 +29,7 @@ export function makePurchase(overrides: Partial<PurchaseRecord> = {}): PurchaseR
     id: overrides.id ?? "purchase-1",
     purchaseDate: "2026-08-01",
     totalAmount: 500,
+    category: "General Groceries",
     createdAt: "2026-08-01T10:00:00.000Z",
     updatedAt: "2026-08-01T10:00:00.000Z",
     ...overrides,

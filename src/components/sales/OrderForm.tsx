@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { ChevronDown, Gift, Contact } from "lucide-react";
+import { ChevronDown, Gift, Contact, Tag } from "lucide-react";
 import { orderInputSchema } from "@shared/schemas";
 import type {
   CustomerSummary,
@@ -8,14 +8,24 @@ import type {
   OrderRecord,
   PaymentStatus,
   ProductCategory,
+  ProductRateRecord,
   QuantityUnit,
+  RateUnit,
 } from "@shared/types";
 import { Button } from "../ui/Button";
 import { Field, inputClassName } from "../ui/Field";
 import { todayDateOnly } from "../../lib/dateRange";
 import { useData } from "../../context/DataContext";
 import { aggregateCustomers } from "../../lib/customers";
+import {
+  calculateAmountFromRate,
+  defaultUnitForRate,
+  findRateForProduct,
+  isUnitCompatibleWithRate,
+} from "../../lib/productRates";
+import { formatCurrency } from "../../lib/format";
 import { CustomerPickerSheet } from "./CustomerPickerSheet";
+import { ProductRatePickerSheet } from "./ProductRatePickerSheet";
 
 interface OrderFormProps {
   initial?: OrderRecord;
@@ -46,7 +56,9 @@ const PRODUCT_CATEGORIES: ProductCategory[] = ["Cake", "Brownie", "Cupcake", "Bi
 const PAYMENT_STATUSES: PaymentStatus[] = ["Paid", "Partial", "Pending"];
 
 function defaultUnitForCategory(category: ProductCategory): QuantityUnit {
-  return category === "Cake" || category === "Bento Cake" ? "kg" : "g";
+  if (category === "Cake" || category === "Bento Cake") return "kg";
+  if (category === "Cupcake") return "pcs";
+  return "g";
 }
 
 function toFormState(order?: OrderRecord, lockedCustomer?: { name: string; phoneNumber: string }): FormState {
@@ -69,7 +81,7 @@ function toFormState(order?: OrderRecord, lockedCustomer?: { name: string; phone
 }
 
 export function OrderForm({ initial, lockedCustomer, onSubmit, onCancel }: OrderFormProps) {
-  const { orders } = useData();
+  const { orders, productRates } = useData();
   const customers = useMemo(() => aggregateCustomers(orders), [orders]);
 
   const [form, setForm] = useState<FormState>(() => toFormState(initial, lockedCustomer));
@@ -78,6 +90,8 @@ export function OrderForm({ initial, lockedCustomer, onSubmit, onCancel }: Order
   const [formError, setFormError] = useState<string | null>(null);
   const [showOccasion, setShowOccasion] = useState(() => (initial?.occasion ?? "None") !== "None");
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [productPickerOpen, setProductPickerOpen] = useState(false);
+  const [selectedRate, setSelectedRate] = useState<{ amount: number; unit: RateUnit } | null>(null);
 
   const needsOccasionDate = form.occasion === "Birthday" || form.occasion === "Anniversary";
 
@@ -103,6 +117,45 @@ export function OrderForm({ initial, lockedCustomer, onSubmit, onCancel }: Order
   function handlePickCustomer(customer: CustomerSummary) {
     setForm((prev) => ({ ...prev, customerName: customer.name, phoneNumber: customer.phoneNumber }));
     setPickerOpen(false);
+  }
+
+  function recalcAmount(quantity: string, unit: QuantityUnit, rate: { amount: number; unit: RateUnit } | null) {
+    if (rate === null) return;
+    const qty = Number(quantity);
+    if (!Number.isFinite(qty) || qty <= 0) return;
+    update("totalAmount", String(calculateAmountFromRate(rate.amount, rate.unit, qty, unit)));
+  }
+
+  function applyRate(rate: { amount: number; unit: RateUnit } | null) {
+    setSelectedRate(rate);
+    if (!rate) return;
+    const compatibleUnit = isUnitCompatibleWithRate(form.quantityUnit, rate.unit)
+      ? form.quantityUnit
+      : defaultUnitForRate(rate.unit);
+    if (compatibleUnit !== form.quantityUnit) update("quantityUnit", compatibleUnit);
+    recalcAmount(form.quantity, compatibleUnit, rate);
+  }
+
+  function handleProductNameChange(value: string) {
+    update("productName", value);
+    const match = findRateForProduct(productRates, value);
+    applyRate(match ? { amount: match.rate, unit: match.rateUnit } : null);
+  }
+
+  function handleQuantityChange(value: string) {
+    update("quantity", value);
+    recalcAmount(value, form.quantityUnit, selectedRate);
+  }
+
+  function handleUnitChange(unit: QuantityUnit) {
+    update("quantityUnit", unit);
+    recalcAmount(form.quantity, unit, selectedRate);
+  }
+
+  function handlePickProduct(product: ProductRateRecord) {
+    setForm((prev) => ({ ...prev, productName: product.productName, productCategory: product.category }));
+    applyRate({ amount: product.rate, unit: product.rateUnit });
+    setProductPickerOpen(false);
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -205,13 +258,24 @@ export function OrderForm({ initial, lockedCustomer, onSubmit, onCancel }: Order
       </Field>
 
       <Field label="Product / description" htmlFor="productName" required error={errors.productName}>
-        <input
-          id="productName"
-          className={inputClassName(!!errors.productName)}
-          value={form.productName}
-          onChange={(e) => update("productName", e.target.value)}
-          placeholder="e.g. Chocolate Truffle Cake"
-        />
+        <div className="flex gap-2">
+          <input
+            id="productName"
+            className={inputClassName(!!errors.productName)}
+            value={form.productName}
+            onChange={(e) => handleProductNameChange(e.target.value)}
+            placeholder="e.g. Chocolate Truffle Cake"
+          />
+          <button
+            type="button"
+            onClick={() => setProductPickerOpen(true)}
+            aria-label="Choose from price list"
+            title="Choose from price list"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-cream-300 bg-white text-cocoa-500"
+          >
+            <Tag className="h-5 w-5" aria-hidden />
+          </button>
+        </div>
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
@@ -224,7 +288,7 @@ export function OrderForm({ initial, lockedCustomer, onSubmit, onCancel }: Order
             step="0.1"
             className={inputClassName(!!errors.quantity)}
             value={form.quantity}
-            onChange={(e) => update("quantity", e.target.value)}
+            onChange={(e) => handleQuantityChange(e.target.value)}
           />
         </Field>
         <Field label="Unit" htmlFor="quantityUnit" required>
@@ -232,15 +296,28 @@ export function OrderForm({ initial, lockedCustomer, onSubmit, onCancel }: Order
             id="quantityUnit"
             className={inputClassName()}
             value={form.quantityUnit}
-            onChange={(e) => update("quantityUnit", e.target.value as QuantityUnit)}
+            onChange={(e) => handleUnitChange(e.target.value as QuantityUnit)}
           >
             <option value="kg">kg</option>
             <option value="g">g</option>
+            <option value="pcs">pcs</option>
           </select>
         </Field>
       </div>
 
-      <Field label="Total amount (Rs.)" htmlFor="totalAmount" required error={errors.totalAmount}>
+      <Field
+        label="Total amount (Rs.)"
+        htmlFor="totalAmount"
+        required
+        error={errors.totalAmount}
+        hint={
+          selectedRate !== null
+            ? `Prefilled at ${formatCurrency(selectedRate.amount)}/${
+                selectedRate.unit === "pcs" ? "pc" : "kg"
+              } from your price list — you can still edit it.`
+            : undefined
+        }
+      >
         <input
           id="totalAmount"
           type="number"
@@ -389,6 +466,13 @@ export function OrderForm({ initial, lockedCustomer, onSubmit, onCancel }: Order
         customers={customers}
         onSelect={handlePickCustomer}
         onClose={() => setPickerOpen(false)}
+      />
+
+      <ProductRatePickerSheet
+        open={productPickerOpen}
+        products={productRates}
+        onSelect={handlePickProduct}
+        onClose={() => setProductPickerOpen(false)}
       />
     </form>
   );

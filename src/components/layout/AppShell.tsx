@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { WifiOff, RefreshCw } from "lucide-react";
 import { BottomNav } from "./BottomNav";
 import { Sidebar } from "./Sidebar";
@@ -8,6 +8,8 @@ import { formatDateOnly } from "../../lib/dateRange";
 
 export function AppShell() {
   const { isOffline, syncing, lastSyncedAt } = useData();
+  const { pathname } = useLocation();
+  const isDashboard = pathname === "/dashboard";
 
   return (
     <div className="min-h-screen bg-cream-100 sm:pl-60">
@@ -24,7 +26,7 @@ export function AppShell() {
           Syncing...
         </div>
       )}
-      <main className="mx-auto max-w-3xl px-4 pb-24 pt-4 sm:pb-10">
+      <main className={`mx-auto px-4 pb-24 pt-4 sm:pb-10 ${isDashboard ? "max-w-5xl" : "max-w-3xl"}`}>
         <Outlet />
       </main>
       <BottomNav />

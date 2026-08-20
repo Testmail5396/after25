@@ -94,8 +94,8 @@ export function buildSeedOrders(): OrderInput[] {
 export function buildSeedPurchases(): PurchaseInput[] {
   const today = new Date();
   return [
-    { purchaseDate: todayDateOnly(), totalAmount: 1500 },
-    { purchaseDate: formatDateOnly(subDays(today, 10)), totalAmount: 2200 },
-    { purchaseDate: formatDateOnly(subDays(today, 40)), totalAmount: 1800 },
+    { purchaseDate: todayDateOnly(), totalAmount: 1500, category: "Baking Essentials" },
+    { purchaseDate: formatDateOnly(subDays(today, 10)), totalAmount: 2200, category: "General Groceries" },
+    { purchaseDate: formatDateOnly(subDays(today, 40)), totalAmount: 1800, category: "Baking Essentials" },
   ];
 }

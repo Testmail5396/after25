@@ -3,14 +3,18 @@ export type {
   OrderRecord,
   PurchaseInput,
   PurchaseRecord,
+  ProductRateInput,
+  ProductRateRecord,
   Backup,
   LoginInput,
 } from "./schemas";
 
 export type ProductCategory = "Cake" | "Brownie" | "Cupcake" | "Biscuits" | "Bento Cake";
-export type QuantityUnit = "kg" | "g";
+export type QuantityUnit = "kg" | "g" | "pcs";
+export type RateUnit = "kg" | "pcs";
 export type Occasion = "Birthday" | "Anniversary" | "Other" | "None";
 export type PaymentStatus = "Paid" | "Partial" | "Pending";
+export type PurchaseCategory = "Baking Essentials" | "General Groceries";
 
 export type DateRangePreset =
   | "last7days"

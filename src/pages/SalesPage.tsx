@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Plus, Search, ShoppingBag, SlidersHorizontal } from "lucide-react";
-import type { OrderInput, OrderRecord, ProductCategory } from "@shared/types";
+import type { OrderInput, OrderRecord, PaymentStatus, ProductCategory } from "@shared/types";
 import { useData } from "../context/DataContext";
 import { useToast } from "../components/ui/Toast";
 import { Sheet } from "../components/ui/Sheet";
@@ -20,11 +21,19 @@ import { sumSales } from "../lib/calculations";
 import { formatCurrency } from "../lib/format";
 
 type CategoryFilter = "All" | ProductCategory;
+type PaymentFilter = "All" | PaymentStatus;
 type SortOrder = "newest" | "oldest";
+
+const PAYMENT_FILTERS: PaymentFilter[] = ["All", "Paid", "Partial", "Pending"];
+
+function readPaymentFilterFromUrl(value: string | null): PaymentFilter {
+  return value === "Paid" || value === "Partial" || value === "Pending" ? value : "All";
+}
 
 export function SalesPage() {
   const { orders, loading, addOrder, editOrder, removeOrder } = useData();
   const { showToast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [search, setSearch] = useState("");
 
@@ -32,25 +41,34 @@ export function SalesPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [sort, setSort] = useState<SortOrder>("newest");
+  const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>(() =>
+    readPaymentFilterFromUrl(searchParams.get("payment")),
+  );
 
   const [filterOpen, setFilterOpen] = useState(false);
   const [draftCategory, setDraftCategory] = useState<CategoryFilter>(category);
   const [draftDateFrom, setDraftDateFrom] = useState(dateFrom);
   const [draftDateTo, setDraftDateTo] = useState(dateTo);
   const [draftSort, setDraftSort] = useState<SortOrder>(sort);
+  const [draftPaymentFilter, setDraftPaymentFilter] = useState<PaymentFilter>(paymentFilter);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<OrderRecord | undefined>(undefined);
   const [pendingDelete, setPendingDelete] = useState<OrderRecord | null>(null);
 
   const activeFilterCount =
-    (category !== "All" ? 1 : 0) + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0) + (sort !== "newest" ? 1 : 0);
+    (category !== "All" ? 1 : 0) +
+    (dateFrom ? 1 : 0) +
+    (dateTo ? 1 : 0) +
+    (sort !== "newest" ? 1 : 0) +
+    (paymentFilter !== "All" ? 1 : 0);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
     const phoneDigits = search.replace(/\D/g, "");
     const result = orders
       .filter((o) => category === "All" || o.productCategory === category)
+      .filter((o) => paymentFilter === "All" || (o.paymentStatus ?? "Paid") === paymentFilter)
       .filter((o) => (dateFrom ? o.saleDate >= dateFrom : true))
       .filter((o) => (dateTo ? o.saleDate <= dateTo : true))
       .filter((o) => {
@@ -68,7 +86,7 @@ export function SalesPage() {
       return sort === "newest" ? (a.createdAt < b.createdAt ? 1 : -1) : a.createdAt < b.createdAt ? -1 : 1;
     });
     return result;
-  }, [orders, search, category, dateFrom, dateTo, sort]);
+  }, [orders, search, category, paymentFilter, dateFrom, dateTo, sort]);
 
   const groupedOrders = useMemo(() => groupConsecutiveByDate(filtered, (o) => o.saleDate), [filtered]);
   const periodTotal = useMemo(() => sumSales(filtered), [filtered]);
@@ -88,6 +106,7 @@ export function SalesPage() {
     setDraftDateFrom(dateFrom);
     setDraftDateTo(dateTo);
     setDraftSort(sort);
+    setDraftPaymentFilter(paymentFilter);
     setFilterOpen(true);
   }
 
@@ -96,6 +115,8 @@ export function SalesPage() {
     setDateFrom(draftDateFrom);
     setDateTo(draftDateTo);
     setSort(draftSort);
+    setPaymentFilter(draftPaymentFilter);
+    setSearchParams({}, { replace: true });
     setFilterOpen(false);
   }
 
@@ -104,10 +125,13 @@ export function SalesPage() {
     setDraftDateFrom("");
     setDraftDateTo("");
     setDraftSort("newest");
+    setDraftPaymentFilter("All");
     setCategory("All");
     setDateFrom("");
     setDateTo("");
     setSort("newest");
+    setPaymentFilter("All");
+    setSearchParams({}, { replace: true });
     setFilterOpen(false);
   }
 
@@ -264,6 +288,27 @@ export function SalesPage() {
                   aria-pressed={draftCategory === c}
                 >
                   {c}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-1.5 text-sm font-medium text-cocoa-600">Payment status</p>
+            <div className="grid grid-cols-4 gap-2">
+              {PAYMENT_FILTERS.map((status) => (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => setDraftPaymentFilter(status)}
+                  className={`h-11 rounded-xl border text-sm font-semibold ${
+                    draftPaymentFilter === status
+                      ? "border-berry-400 bg-blush-100 text-berry-600"
+                      : "border-cream-300 bg-white text-cocoa-500"
+                  }`}
+                  aria-pressed={draftPaymentFilter === status}
+                >
+                  {status}
                 </button>
               ))}
             </div>

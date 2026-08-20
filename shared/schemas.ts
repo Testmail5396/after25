@@ -9,15 +9,19 @@ const dateOnly = z
 const isoDateTime = z.string().datetime({ offset: true }).or(z.string().min(1));
 
 export const productCategorySchema = z.enum(["Cake", "Brownie", "Cupcake", "Biscuits", "Bento Cake"]);
-export const quantityUnitSchema = z.enum(["kg", "g"]);
+export const quantityUnitSchema = z.enum(["kg", "g", "pcs"]);
+export const rateUnitSchema = z.enum(["kg", "pcs"]);
 export const occasionSchema = z.enum(["Birthday", "Anniversary", "Other", "None"]);
 export const paymentStatusSchema = z.enum(["Paid", "Partial", "Pending"]);
+export const purchaseCategorySchema = z.enum(["Baking Essentials", "General Groceries"]);
 
 // ---- Purchases ----
 
 export const purchaseInputSchema = z.object({
   purchaseDate: dateOnly,
   totalAmount: z.number().positive("Amount must be greater than zero"),
+  // Existing purchases recorded before this field existed default to General Groceries.
+  category: purchaseCategorySchema.default("General Groceries"),
 });
 export type PurchaseInput = z.infer<typeof purchaseInputSchema>;
 
@@ -68,6 +72,23 @@ export const orderRecordSchema = orderInputSchema.and(
 );
 export type OrderRecord = z.infer<typeof orderRecordSchema>;
 
+// ---- Product rates ----
+
+export const productRateInputSchema = z.object({
+  productName: z.string().trim().min(1, "Product name is required").max(160),
+  category: productCategorySchema,
+  rateUnit: rateUnitSchema,
+  rate: z.number().positive("Rate must be greater than zero"),
+});
+export type ProductRateInput = z.infer<typeof productRateInputSchema>;
+
+export const productRateRecordSchema = productRateInputSchema.extend({
+  id: z.string(),
+  createdAt: isoDateTime,
+  updatedAt: isoDateTime,
+});
+export type ProductRateRecord = z.infer<typeof productRateRecordSchema>;
+
 // ---- Backup ----
 
 export const backupSchema = z.object({
@@ -75,6 +96,7 @@ export const backupSchema = z.object({
   exportedAt: z.string(),
   orders: z.array(orderRecordSchema),
   purchases: z.array(purchaseRecordSchema),
+  products: z.array(productRateRecordSchema).optional().default([]),
 });
 export type Backup = z.infer<typeof backupSchema>;
 

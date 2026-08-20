@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { purchaseInputSchema } from "@shared/schemas";
-import type { PurchaseInput, PurchaseRecord } from "@shared/types";
+import type { PurchaseCategory, PurchaseInput, PurchaseRecord } from "@shared/types";
 import { Button } from "../ui/Button";
 import { Field, inputClassName } from "../ui/Field";
 import { todayDateOnly } from "../../lib/dateRange";
@@ -11,9 +11,12 @@ interface PurchaseFormProps {
   onCancel: () => void;
 }
 
+const PURCHASE_CATEGORIES: PurchaseCategory[] = ["Baking Essentials", "General Groceries"];
+
 export function PurchaseForm({ initial, onSubmit, onCancel }: PurchaseFormProps) {
   const [purchaseDate, setPurchaseDate] = useState(initial?.purchaseDate ?? todayDateOnly());
   const [totalAmount, setTotalAmount] = useState(initial ? String(initial.totalAmount) : "");
+  const [category, setCategory] = useState<PurchaseCategory>(initial?.category ?? "Baking Essentials");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -25,6 +28,7 @@ export function PurchaseForm({ initial, onSubmit, onCancel }: PurchaseFormProps)
     const parsed = purchaseInputSchema.safeParse({
       purchaseDate,
       totalAmount: Number(totalAmount),
+      category,
     });
 
     if (!parsed.success) {
@@ -75,6 +79,26 @@ export function PurchaseForm({ initial, onSubmit, onCancel }: PurchaseFormProps)
           onChange={(e) => setTotalAmount(e.target.value)}
           placeholder="0"
         />
+      </Field>
+
+      <Field label="Category" htmlFor="category" required error={errors.category}>
+        <div className="grid grid-cols-2 gap-2">
+          {PURCHASE_CATEGORIES.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setCategory(c)}
+              className={`h-11 rounded-xl border text-sm font-semibold ${
+                category === c
+                  ? "border-berry-400 bg-blush-100 text-berry-600"
+                  : "border-cream-300 bg-white text-cocoa-500"
+              }`}
+              aria-pressed={category === c}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
       </Field>
 
       {formError && (
